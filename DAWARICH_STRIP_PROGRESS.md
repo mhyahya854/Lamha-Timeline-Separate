@@ -5,14 +5,29 @@
 
 ## Repository Note
 
-This directory is an extracted source tree with **no `.git` metadata**. Git status/branch/commit
-commands are not available. `git diff` / commit steps in the workflow therefore do not apply;
-the `## Commit` records below will report `none` until a repository is initialized.
+This directory was an extracted source tree with **no `.git` metadata** until the 2026-08-10
+bootstrap run. Status as of that run:
+
+- Git initialized on branch `main`.
+- `origin` configured to `git@github.com:mhyahya854/Lamha-Timeline-Separate.git` (verified).
+- `upstream` configured to `https://github.com/Freika/dawarich.git` (reference only).
+- Baseline commit created locally: `686feb6` (`chore: establish Dawarich baseline for Lamha Timeline stripping`).
+- Baseline **push is BLOCKED**: GitHub rejects OAuth-token pushes that create/update
+  `.github/workflows/*` without the `workflow` scope. The local `gh` token has scopes
+  `admin:public_key, gist, read:org, repo` and no `workflow` scope.
+- SSH push is not possible either: `~/.ssh/id_ed25519` is passphrase-protected, no ssh-agent is
+  running, and the passphrase is not available in this environment.
+- Workaround applied for future pushes: local `git config url."https://github.com/".insteadOf
+  "git@github.com:"` so `git push origin main` uses HTTPS with the `gh` credential helper.
+  **Retry the baseline push on the next run**; until the push succeeds, the bootstrap is
+  incomplete and no strip task may run.
 
 ## Execution State
 
 - Initialized: 2026-08-10
-- Current run: initialization only (queue creation, no source changes)
+- Bootstrap run: repository initialized, baseline committed locally, push BLOCKED
+  (missing GitHub `workflow` scope for OAuth token)
+- No source code changed; no strip task performed
 - `## Next Task`: `STRIP-001` (see below)
 
 ## Removal Queue (ordered)
@@ -51,7 +66,15 @@ None yet.
 
 ## Decisions
 
-- **Git:** The directory is not a git repository; commit records will be `none` unless a repo is initialized later.
+- **Git:** The directory was not a git repository; bootstrap initialized it on `main` with
+  `origin` = `git@github.com:mhyahya854/Lamha-Timeline-Separate.git`.
+- **Push credentials:** Local SSH key is passphrase-protected with no usable agent; HTTPS via the
+  authenticated `gh` token works for normal refs but the OAuth token lacks the `workflow` scope,
+  which GitHub requires to push `.github/workflows/*`. A token refresh/PAT with `workflow` scope
+  (or removal of the workflows from the pushed baseline after explicit user approval) is required
+  before the baseline push can succeed. This is recorded as a blocker, not a completed bootstrap.
+- **Baseline content:** The baseline commit contains the untouched Dawarich source tree plus the
+  three planning/state documents, preserving `LICENSE` (AGPL-3.0) and upstream attribution.
 - **Queue derivation:** The queue is derived solely from `LAMHA_DAWARICH_REMOVE_SCOPE.md`, ordered so retained
   location-history capabilities (Google Timeline import, cleanup/normalization/deduplication, reverse geocoding,
   visit/place detection, route reconstruction, trip geography, statistics, minimal saved locations) remain bootable
