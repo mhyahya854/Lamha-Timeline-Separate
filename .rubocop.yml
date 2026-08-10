@@ -1,0 +1,103 @@
+require:
+  - ./lib/rubocop/cop/dawarich/points_lat_lon_access
+
+AllCops:
+  NewCops: disable
+  Exclude:
+    - 'db/schema.rb'
+plugins: rubocop-rails
+
+Dawarich/PointsLatLonAccess:
+  Enabled: true
+  Include:
+    - 'app/**/*.rb'
+    - 'lib/**/*.rb'
+    - 'lib/**/*.rake'
+  Exclude:
+    - 'lib/rubocop/**/*.rb'
+
+Style/Documentation:
+  Enabled: false
+
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+Layout/HashAlignment:
+  Enabled: false
+
+Metrics/BlockLength:
+  Enabled: false
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Enabled: false
+
+Metrics/PerceivedComplexity:
+  Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false
+
+Metrics/ParameterLists:
+  Enabled: false
+
+Metrics/ClassLength:
+  Enabled: false
+
+Naming/VariableNumber:
+  Exclude:
+    - 'spec/**/*'
+
+Rails/UnknownEnv:
+  Environments:
+    - development
+    - test
+    - production
+    - staging
+
+Rails/UniqueValidationWithoutIndex:
+  Enabled: false
+
+Rails/SkipsModelValidations:
+  Enabled: false
+
+Rails/BulkChangeTable:
+  Exclude:
+    - 'db/migrate/**/*'
+
+Rails/ReversibleMigration:
+  Exclude:
+    - 'db/migrate/**/*'
+
+Rails/NotNullColumn:
+  Exclude:
+    - 'db/migrate/**/*'
+
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - 'lib/tasks/**/*'
+
+Lint/UnreachableCode:
+  Exclude:
+    - 'db/data/**/*'
+
+Rails/LexicallyScopedActionFilter:
+  Enabled: false
+
+Rails/OutputSafety:
+  Enabled: false
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+Naming/PredicatePrefix:
+  Enabled: false
+
+Layout/LineLength:
+  Exclude:
+    - 'config/initializers/devise.rb'

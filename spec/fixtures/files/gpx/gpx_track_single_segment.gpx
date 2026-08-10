@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx creator="Garmin Connect" version="1.1"
+  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/11.xsd"
+  xmlns:ns3="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+  xmlns="http://www.topografix.com/GPX/1/1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns2="http://www.garmin.com/xmlschemas/GpxExtensions/v3">
+  <metadata>
+    <name>La Zubia - balcon</name>
+    <link href="connect.garmin.com">
+      <text>Garmin Connect</text>
+    </link>
+    <time>2024-03-16T12:30:23.000Z</time>
+  </metadata>
+  <trk>
+    <name>La Zubia - balcon</name>
+    <trkseg>
+      <trkpt lat="37.114371210336685" lon="-3.5733646620064974">
+        <ele>824.93</ele>
+        <time>2024-03-16T12:30:23.000Z</time>
+      </trkpt>
+      <trkpt lat="37.11436986923218" lon="-3.573378324508667">
+        <ele>822.91</ele>
+        <time>2024-03-16T12:30:23.000Z</time>
+      </trkpt>
+      <trkpt lat="37.11464881896973" lon="-3.574247360229492">
+        <ele>819.57</ele>
+        <time>2024-03-16T12:30:23.015Z</time>
+      </trkpt>
+      <trkpt lat="37.11504578590393" lon="-3.575127124786377">
+        <ele>815.2</ele>
+        <time>2024-03-16T12:30:23.046Z</time>
+      </trkpt>
+      <trkpt lat="37.115195989608765" lon="-3.575320243835449">
+        <ele>811.41</ele>
+        <time>2024-03-16T12:30:23.082Z</time>
+      </trkpt>
+      <trkpt lat="37.11528182029724" lon="-3.5756099224090576">
+        <ele>808.11</ele>
+        <time>2024-03-16T12:30:23.123Z</time>
+      </trkpt>
+      <trkpt lat="37.11527109146118" lon="-3.575727939605713">
+        <ele>805.33</ele>
+        <time>2024-03-16T12:30:23.166Z</time>
+      </trkpt>
+      <trkpt lat="37.11528182029724" lon="-3.5759317874908447">
+        <ele>802.85</ele>
+        <time>2024-03-16T12:30:23.212Z</time>
+      </trkpt>
+      <trkpt lat="37.11532473564148" lon="-3.576028347015381">
+        <ele>800.8</ele>
+        <time>2024-03-16T12:30:23.260Z</time>
+      </trkpt>
+      <trkpt lat="37.11537837982178" lon="-3.576350212097168">
+        <ele>798.9</ele>
+        <time>2024-03-16T12:30:23.313Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

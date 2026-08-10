@@ -1,0 +1,5680 @@
+---
+openapi: 3.0.1
+info:
+  title: Dawarich API
+  version: v1
+  description: API for Dawarich, your favorite alternative to Google Timeline. Provides
+    endpoints for managing location data, tracks, visits, statistics, and more.
+paths:
+  "/api/v1/areas":
+    post:
+      summary: Creates an area
+      tags:
+      - Areas
+      description: Creates a new geographic area for the authenticated user
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '201':
+          description: area created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: The ID of the area
+                  name:
+                    type: string
+                    description: The name of the area
+                  latitude:
+                    oneOf:
+                    - type: number
+                    - type: string
+                    description: The latitude of the area center
+                  longitude:
+                    oneOf:
+                    - type: number
+                    - type: string
+                    description: The longitude of the area center
+                  radius:
+                    type: integer
+                    description: The radius of the area in meters
+                  user_id:
+                    type: integer
+                    description: The ID of the owning user
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '422':
+          description: invalid request
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                area:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: Home
+                      description: The name of the area
+                    latitude:
+                      type: number
+                      example: 40.7128
+                      description: The latitude of the area center
+                    longitude:
+                      type: number
+                      example: -74.006
+                      description: The longitude of the area center
+                    radius:
+                      type: number
+                      example: 100
+                      description: The radius of the area in meters
+                  required:
+                  - name
+                  - latitude
+                  - longitude
+                  - radius
+            examples:
+              '0':
+                summary: Creates an area
+                value:
+                  area:
+                    name: Home
+                    latitude: 40.7128
+                    longitude: -74.006
+                    radius: 100
+    get:
+      summary: Retrieves all areas
+      tags:
+      - Areas
+      description: Returns all areas belonging to the authenticated user
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: areas found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                      description: The ID of the area
+                    name:
+                      type: string
+                      example: Home
+                      description: The name of the area
+                    latitude:
+                      oneOf:
+                      - type: number
+                      - type: string
+                      example: 40.7128
+                      description: The latitude of the area center
+                    longitude:
+                      oneOf:
+                      - type: number
+                      - type: string
+                      example: -74.006
+                      description: The longitude of the area center
+                    radius:
+                      type: integer
+                      example: 100
+                      description: The radius of the area in meters
+                  required:
+                  - id
+                  - name
+                  - latitude
+                  - longitude
+                  - radius
+        '401':
+          description: unauthorized
+  "/api/v1/areas/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Area ID
+      schema:
+        type: integer
+    get:
+      summary: Retrieves a specific area
+      tags:
+      - Areas
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: area found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: The ID of the area
+                  name:
+                    type: string
+                    description: The name of the area
+                  latitude:
+                    oneOf:
+                    - type: number
+                    - type: string
+                    description: The latitude of the area center
+                  longitude:
+                    oneOf:
+                    - type: number
+                    - type: string
+                    description: The longitude of the area center
+                  radius:
+                    type: integer
+                    description: The radius of the area in meters
+        '404':
+          description: area not found
+        '401':
+          description: unauthorized
+    patch:
+      summary: Updates an area
+      tags:
+      - Areas
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: area updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: The ID of the area
+                  name:
+                    type: string
+                    description: The name of the area
+                  latitude:
+                    oneOf:
+                    - type: number
+                    - type: string
+                    description: The latitude of the area center
+                  longitude:
+                    oneOf:
+                    - type: number
+                    - type: string
+                    description: The longitude of the area center
+                  radius:
+                    type: integer
+                    description: The radius of the area in meters
+        '404':
+          description: area not found
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                area:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: The name of the area
+                    latitude:
+                      type: number
+                      description: The latitude of the area center
+                    longitude:
+                      type: number
+                      description: The longitude of the area center
+                    radius:
+                      type: number
+                      description: The radius of the area in meters
+    delete:
+      summary: Deletes an area
+      tags:
+      - Areas
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: area deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message
+        '404':
+          description: area not found
+        '401':
+          description: unauthorized
+  "/api/v1/auth/apple":
+    post:
+      summary: Sign in with Apple
+      tags:
+      - Auth
+      description: Exchanges an Apple `id_token` for a Dawarich API key. Creates a
+        new account on first use (returns 201) or returns the existing account (returns
+        200).
+      parameters: []
+      responses:
+        '201':
+          description: new user created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                  email:
+                    type: string
+                  api_key:
+                    type: string
+                  status:
+                    type: string
+                  plan:
+                    type: string
+                    nullable: true
+                  subscription_source:
+                    type: string
+                    nullable: true
+                  active_until:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '401':
+          description: apple token verification failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_token:
+                  type: string
+                  description: Apple-issued ID token (JWT)
+                nonce:
+                  type: string
+                  description: Nonce echoed from the Apple sign-in flow
+                  nullable: true
+              required:
+              - id_token
+  "/api/v1/auth/google":
+    post:
+      summary: Sign in with Google
+      tags:
+      - Auth
+      description: Exchanges a Google `id_token` for a Dawarich API key. Creates a
+        new account on first use (returns 201) or returns the existing account (returns
+        200).
+      parameters: []
+      responses:
+        '201':
+          description: new user created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                  email:
+                    type: string
+                  api_key:
+                    type: string
+                  status:
+                    type: string
+                  plan:
+                    type: string
+                    nullable: true
+                  subscription_source:
+                    type: string
+                    nullable: true
+                  active_until:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '401':
+          description: google token verification failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_token:
+                  type: string
+                  description: Google-issued ID token (JWT)
+                nonce:
+                  type: string
+                  description: Nonce echoed from the Google sign-in flow
+                  nullable: true
+              required:
+              - id_token
+  "/api/v1/auth/otp_challenge":
+    post:
+      summary: Verifies a two-factor challenge
+      tags:
+      - Auth
+      description: Exchanges a challenge_token issued by `/auth/login` plus a current
+        TOTP (or a backup code) for a full session response with `api_key`.
+      parameters: []
+      responses:
+        '200':
+          description: two-factor verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                  email:
+                    type: string
+                  api_key:
+                    type: string
+                  status:
+                    type: string
+                  plan:
+                    type: string
+                    nullable: true
+                  subscription_source:
+                    type: string
+                    nullable: true
+                  active_until:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '401':
+          description: invalid challenge or otp code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                challenge_token:
+                  type: string
+                  description: Token issued by /auth/login when 2FA is required
+                otp_code:
+                  type: string
+                  description: 6-digit TOTP code or one of the user's backup codes
+              required:
+              - challenge_token
+              - otp_code
+  "/api/v1/auth/register":
+    post:
+      summary: Registers a new user
+      tags:
+      - Auth
+      description: Creates a new user account. On Cloud, the user lands in `pending_payment`
+        until the subscription service confirms payment. On self-hosted, the user
+        is active immediately.
+      parameters: []
+      responses:
+        '201':
+          description: user created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    description: The new user ID
+                  email:
+                    type: string
+                  api_key:
+                    type: string
+                    description: API key used to authenticate subsequent requests
+                  status:
+                    type: string
+                    description: User status (e.g. pending_payment, active)
+                  plan:
+                    type: string
+                    nullable: true
+                  subscription_source:
+                    type: string
+                    nullable: true
+                  active_until:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '422':
+          description: validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  details:
+                    type: object
+                    additionalProperties: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                password_confirmation:
+                  type: string
+                  format: password
+              required:
+              - email
+              - password
+              - password_confirmation
+  "/api/v1/auth/login":
+    post:
+      summary: Logs in a user
+      tags:
+      - Auth
+      description: Authenticates a user with email and password. If the user has 2FA
+        enabled, returns a `202` with a one-time challenge token that must be exchanged
+        via `/api/v1/auth/otp_challenge`. Otherwise returns the api_key.
+      parameters: []
+      responses:
+        '200':
+          description: authenticated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                  email:
+                    type: string
+                  api_key:
+                    type: string
+                  status:
+                    type: string
+                  plan:
+                    type: string
+                    nullable: true
+                  subscription_source:
+                    type: string
+                    nullable: true
+                  active_until:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '202':
+          description: two-factor authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  two_factor_required:
+                    type: boolean
+                  challenge_token:
+                    type: string
+                    description: Short-lived token to exchange via /auth/otp_challenge
+                  ttl:
+                    type: integer
+                    description: Token TTL in seconds
+        '401':
+          description: invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+              required:
+              - email
+              - password
+  "/api/v1/countries/borders":
+    get:
+      summary: Retrieves country borders GeoJSON data
+      tags:
+      - Countries
+      description: Returns GeoJSON FeatureCollection containing country border geometries.
+        Response is cached for 1 day.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: borders found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: FeatureCollection
+                    description: GeoJSON type
+                  features:
+                    type: array
+                    description: Array of GeoJSON Feature objects with country borders
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: Feature
+                        properties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              description: Country name
+                            iso_a3:
+                              type: string
+                              description: ISO 3166-1 alpha-3 country code
+                        geometry:
+                          type: object
+                          description: GeoJSON geometry (Polygon or MultiPolygon)
+        '401':
+          description: unauthorized
+  "/api/v1/countries/visited_cities":
+    get:
+      summary: Get visited cities by date range
+      tags:
+      - Countries
+      description: Returns a list of visited cities and countries based on tracked
+        points within the specified date range
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        example: a1b2c3d4e5f6g7h8i9j0
+        description: Your API authentication key
+        schema:
+          type: string
+      - name: start_at
+        in: query
+        schema:
+          type: string
+          format: date
+        required: true
+        description: Start date in YYYY-MM-DD format
+        example: '2023-01-01'
+      - name: end_at
+        in: query
+        schema:
+          type: string
+          format: date
+        required: true
+        description: End date in YYYY-MM-DD format
+        example: '2023-12-31'
+      responses:
+        '200':
+          description: cities found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    description: Array of countries and their visited cities
+                    example:
+                    - country: Germany
+                      cities:
+                      - city: Berlin
+                        points: 4394
+                        timestamp: 1724868369
+                        stayed_for: 24490
+                      - city: Munich
+                        points: 2156
+                        timestamp: 1724782369
+                        stayed_for: 12450
+                    - country: France
+                      cities:
+                      - city: Paris
+                        points: 3267
+                        timestamp: 1724695969
+                        stayed_for: 18720
+                    items:
+                      type: object
+                      properties:
+                        country:
+                          type: string
+                          example: Germany
+                        cities:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              city:
+                                type: string
+                                example: Berlin
+                              points:
+                                type: integer
+                                example: 4394
+                                description: Number of points in the city
+                              timestamp:
+                                type: integer
+                                example: 1724868369
+                                description: Timestamp of the last point in the city
+                                  in seconds since Unix epoch
+                              stayed_for:
+                                type: integer
+                                example: 24490
+                                description: Number of minutes the user stayed in
+                                  the city
+        '401':
+          description: unauthorized
+        '400':
+          description: bad request - missing parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: 'Missing required parameters: start_at, end_at'
+  "/api/v1/demo_data":
+    get:
+      summary: Checks whether demo data exists
+      tags:
+      - Demo Data
+      description: Returns whether the authenticated user has demo data loaded. Responds
+        404 on servers without demo-data support, which clients treat as the capability
+        signal.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: demo data status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                    description: Whether a demo import exists for the user
+                required:
+                - exists
+        '401':
+          description: unauthorized
+    post:
+      summary: Loads demo data
+      tags:
+      - Demo Data
+      description: Seeds the demo dataset (Berlin + Prague) for the authenticated
+        user. Returns 200 with status "exists" when demo data is already loaded.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '201':
+          description: demo data created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - created
+                    description: Result of the import
+                required:
+                - status
+        '401':
+          description: unauthorized
+    delete:
+      summary: Removes demo data
+      tags:
+      - Demo Data
+      description: Removes all demo data (points, visits, places, tags, tracks and
+        the demo trip) for the authenticated user. Real user data is not touched.
+        Returns status "no_demo_data" when there is nothing to remove.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: demo data removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - destroyed
+                    - no_demo_data
+                    description: Result of the removal
+                required:
+                - status
+        '401':
+          description: unauthorized
+  "/api/v1/digests":
+    get:
+      summary: Lists all yearly digests
+      tags:
+      - Digests
+      description: Returns all yearly digests for the authenticated user and available
+        years for generation
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: digests found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  digests:
+                    type: array
+                    description: List of yearly digests
+                    items:
+                      type: object
+                      properties:
+                        year:
+                          type: integer
+                          description: The year of the digest
+                        distance:
+                          type: integer
+                          description: Total distance in meters
+                        countriesCount:
+                          type: integer
+                          description: Number of countries visited
+                        citiesCount:
+                          type: integer
+                          description: Number of cities visited
+                        createdAt:
+                          type: string
+                          format: date-time
+                          description: When the digest was generated
+                  availableYears:
+                    type: array
+                    items:
+                      type: integer
+                    description: Years available for digest generation (no existing
+                      digest yet)
+        '401':
+          description: unauthorized
+    post:
+      summary: Generates a yearly digest
+      tags:
+      - Digests
+      description: Queues generation of a yearly digest for the specified year
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '202':
+          description: digest generation queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message
+        '422':
+          description: invalid year
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                year:
+                  type: integer
+                  description: Year to generate digest for
+                  example: 2024
+              required:
+              - year
+  "/api/v1/digests/{year}":
+    parameters:
+    - name: year
+      in: path
+      required: true
+      description: Year of the digest
+      schema:
+        type: integer
+    get:
+      summary: Retrieves a yearly digest
+      tags:
+      - Digests
+      description: Returns detailed digest data for a specific year
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: distance_unit
+        in: query
+        required: false
+        description: 'Distance unit: km or mi (defaults to user setting)'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: digest found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                    description: The year of the digest
+                  distance:
+                    type: object
+                    description: Distance details
+                    properties:
+                      meters:
+                        type: integer
+                        description: Total distance in meters
+                      converted:
+                        type: number
+                        description: Distance in the requested unit
+                      unit:
+                        type: string
+                        description: Distance unit (km or mi)
+                      comparisonText:
+                        type: string
+                        description: Fun comparison text
+                  toponyms:
+                    type: object
+                    description: Countries and cities visited
+                    properties:
+                      countriesCount:
+                        type: integer
+                      citiesCount:
+                        type: integer
+                      countries:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            country:
+                              type: string
+                            cities:
+                              type: array
+                              items:
+                                type: string
+                  monthlyDistances:
+                    type: object
+                    description: Distance per month (keyed by month name)
+                  timeSpentByLocation:
+                    type: object
+                    description: Time spent in each location
+                  firstTimeVisits:
+                    type: object
+                    description: First-time country and city visits
+                  yearOverYear:
+                    type: object
+                    nullable: true
+                    description: Year-over-year comparison
+                    properties:
+                      distanceChangePercent:
+                        type: number
+                      countriesChange:
+                        type: integer
+                      citiesChange:
+                        type: integer
+                  allTimeStats:
+                    type: object
+                    description: All-time cumulative stats
+                    properties:
+                      totalCountries:
+                        type: integer
+                      totalCities:
+                        type: integer
+                      totalDistance:
+                        type: string
+                  travelPatterns:
+                    type: object
+                    description: Travel pattern analysis
+                    properties:
+                      timeOfDay:
+                        type: object
+                      seasonality:
+                        type: object
+                      activityBreakdown:
+                        type: object
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+        '404':
+          description: digest not found
+        '401':
+          description: unauthorized
+    delete:
+      summary: Deletes a yearly digest
+      tags:
+      - Digests
+      description: Deletes the digest for the specified year
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '204':
+          description: digest deleted
+        '404':
+          description: digest not found
+        '401':
+          description: unauthorized
+  "/api/v1/families/locations":
+    get:
+      summary: Retrieves family members' locations
+      tags:
+      - Families
+      description: Returns the last known locations of all family members who have
+        enabled location sharing. Requires the Family plan (any plan on self-hosted
+        instances) and the user to be part of a family.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: family locations found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locations:
+                    type: array
+                    description: Array of family member location data
+                    items:
+                      type: object
+                  updated_at:
+                    type: string
+                    format: date-time
+                    description: When the data was last updated
+                  sharing_enabled:
+                    type: boolean
+                    description: Whether the current user has sharing enabled
+        '404':
+          description: user not in a family
+        '403':
+          description: family plan required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Always 'family_plan_required'
+                  message:
+                    type: string
+                    description: Human-readable explanation
+                  upgrade_url:
+                    type: string
+                    nullable: true
+                    description: URL to upgrade to the Family plan
+        '401':
+          description: unauthorized
+  "/api/v1/families/locations/history":
+    get:
+      summary: Retrieves family members' location history for a time range
+      tags:
+      - Families
+      description: Returns historical points for each family member with sharing enabled,
+        between `start_at` and `end_at`. Both timestamps are required and must be
+        parseable ISO 8601.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: start_at
+        in: query
+        required: true
+        description: Start of the time range (ISO 8601)
+        schema:
+          type: string
+      - name: end_at
+        in: query
+        required: true
+        description: End of the time range (ISO 8601)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: history returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members:
+                    type: array
+                    items:
+                      type: object
+                      description: Per-member historical points
+        '400':
+          description: missing or invalid date parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: user not in a family
+        '403':
+          description: family plan required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Always 'family_plan_required'
+                  message:
+                    type: string
+                    description: Human-readable explanation
+                  upgrade_url:
+                    type: string
+                    nullable: true
+                    description: URL to upgrade to the Family plan
+        '401':
+          description: unauthorized
+  "/api/v1/health":
+    get:
+      summary: Retrieves application status
+      tags:
+      - Health
+      description: Returns the health status of the application. No authentication
+        required.
+      responses:
+        '200':
+          description: Healthy
+          headers:
+            X-Dawarich-Response:
+              schema:
+                type: string
+                example: Hey, I'm alive!
+              required: true
+              description: 'Depending on the authentication status, the response will
+                differ. If authenticated: ''Hey, I''m alive and authenticated!''.
+                If not: ''Hey, I''m alive!''.'
+            X-Dawarich-Version:
+              schema:
+                type: string
+                example: 1.0.0
+              required: true
+              description: 'The version of the application, for example: 1.0.0'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                    description: Application health status
+  "/api/v1/immich/enrich/scan":
+    post:
+      summary: Scans Immich for photos missing geodata
+      tags:
+      - Immich
+      description: Calls the configured Immich instance and returns photos that lack
+        location data along with candidate points from Dawarich within the configured
+        time tolerance.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: start_date
+        in: query
+        required: false
+        description: Earliest photo capture date (ISO 8601)
+        schema:
+          type: string
+      - name: end_date
+        in: query
+        required: false
+        description: Latest photo capture date (ISO 8601)
+        schema:
+          type: string
+      - name: tolerance
+        in: query
+        required: false
+        description: Match tolerance in seconds. Defaults to 1800 (30 min).
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: scan completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      type: object
+                  total_without_geodata:
+                    type: integer
+                  total_matched:
+                    type: integer
+                  error:
+                    type: string
+                    nullable: true
+        '401':
+          description: unauthorized
+  "/api/v1/immich/enrich":
+    post:
+      summary: Writes location data back to Immich photos
+      tags:
+      - Immich
+      description: Pushes latitude/longitude updates for the supplied Immich asset
+        IDs back to the user's Immich instance.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: enrich completed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assets:
+                  type: array
+                  description: List of assets to enrich
+                  items:
+                    type: object
+                    properties:
+                      immich_asset_id:
+                        type: string
+                      latitude:
+                        type: number
+                      longitude:
+                        type: number
+                    required:
+                    - immich_asset_id
+                    - latitude
+                    - longitude
+              required:
+              - assets
+  "/api/v1/imports":
+    get:
+      summary: Lists imports
+      tags:
+      - Imports
+      description: Returns all imports for the authenticated user, ordered by creation
+        date (newest first)
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        description: Page number
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        description: 'Items per page (default: 25)'
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: imports found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: Import ID
+                    name:
+                      type: string
+                      description: Import filename
+                    source:
+                      type: string
+                      nullable: true
+                      description: Detected source type (gpx, geojson, kml, owntracks,
+                        etc.)
+                    status:
+                      type: string
+                      description: Processing status (created, processing, completed,
+                        failed)
+                    created_at:
+                      type: string
+                      format: date-time
+                    points_count:
+                      type: integer
+                      description: Number of points imported
+                    processed:
+                      type: integer
+                      description: Number of points processed so far
+                    error_message:
+                      type: string
+                      nullable: true
+                      description: Error message if import failed
+                  required:
+                  - id
+                  - name
+                  - status
+                  - created_at
+        '401':
+          description: unauthorized
+    post:
+      summary: Creates an import
+      tags:
+      - Imports
+      description: Uploads a file (GPX, GeoJSON, KML, OwnTracks, etc.) and queues
+        it for import processing. Source type is auto-detected from the file content.
+        Processing happens asynchronously in the background.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '201':
+          description: import created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Import ID
+                  name:
+                    type: string
+                    description: Import filename
+                  source:
+                    type: string
+                    nullable: true
+                    description: Detected source type
+                  status:
+                    type: string
+                    description: Processing status
+                  created_at:
+                    type: string
+                    format: date-time
+                  points_count:
+                    type: integer
+                    description: Number of points imported
+                  processed:
+                    type: integer
+                    description: Number of points processed so far
+                  error_message:
+                    type: string
+                    nullable: true
+                required:
+                - id
+                - name
+                - status
+                - created_at
+        '422':
+          description: missing file or validation error
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: file
+        required: true
+        description: The file to import (GPX, GeoJSON, KML, OwnTracks JSON, etc.)
+  "/api/v1/imports/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Import ID
+      schema:
+        type: integer
+    get:
+      summary: Retrieves an import
+      tags:
+      - Imports
+      description: Returns details of a specific import including processing status
+        and point count
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: import found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Import ID
+                  name:
+                    type: string
+                    description: Import filename
+                  source:
+                    type: string
+                    nullable: true
+                    description: Detected source type
+                  status:
+                    type: string
+                    description: Processing status
+                  created_at:
+                    type: string
+                    format: date-time
+                  points_count:
+                    type: integer
+                    description: Number of points imported
+                  processed:
+                    type: integer
+                    description: Number of points processed so far
+                  error_message:
+                    type: string
+                    nullable: true
+                required:
+                - id
+                - name
+                - status
+                - created_at
+        '404':
+          description: import not found
+        '401':
+          description: unauthorized
+  "/api/v1/insights":
+    get:
+      summary: Retrieves insights overview for a year
+      tags:
+      - Insights
+      description: Returns aggregated insights including totals, activity heatmap,
+        and available years
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: year
+        in: query
+        required: false
+        description: Year to get insights for (defaults to most recent year with data)
+        schema:
+          type: integer
+      - name: distance_unit
+        in: query
+        required: false
+        description: 'Distance unit: km or mi (defaults to user setting)'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: insights found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                    description: The selected year
+                  availableYears:
+                    type: array
+                    items:
+                      type: integer
+                    description: Years with available data
+                  totals:
+                    type: object
+                    description: Aggregated totals for the year
+                    properties:
+                      totalDistance:
+                        type: number
+                        description: Total distance traveled
+                      distanceUnit:
+                        type: string
+                        description: Unit of distance (km or mi)
+                      countriesCount:
+                        type: integer
+                        description: Number of countries visited
+                      citiesCount:
+                        type: integer
+                        description: Number of cities visited
+                      countriesList:
+                        type: array
+                        items:
+                          type: string
+                        description: List of country names
+                      daysTraveling:
+                        type: number
+                        description: Number of days with tracked movement
+                      biggestMonth:
+                        type: object
+                        nullable: true
+                        description: Month with most distance
+                  activityHeatmap:
+                    type: object
+                    nullable: true
+                    description: Activity heatmap data for the year
+                    properties:
+                      dailyData:
+                        type: object
+                        description: Daily activity data keyed by date
+                      activityLevels:
+                        type: object
+                        description: Activity level thresholds
+                      maxDistance:
+                        type: number
+                        description: Maximum daily distance
+                      activeDays:
+                        type: integer
+                        description: Number of active days
+                      currentStreak:
+                        type: integer
+                        description: Current consecutive active days
+                      longestStreak:
+                        type: integer
+                        description: Longest consecutive active days
+                      longestStreakStart:
+                        type: string
+                        nullable: true
+                        description: Start date of longest streak
+                      longestStreakEnd:
+                        type: string
+                        nullable: true
+                        description: End date of longest streak
+        '401':
+          description: unauthorized
+  "/api/v1/insights/details":
+    get:
+      summary: Retrieves detailed insights with comparisons and travel patterns
+      tags:
+      - Insights
+      description: Returns year-over-year comparison and travel pattern analysis
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: year
+        in: query
+        required: false
+        description: Year to get details for
+        schema:
+          type: integer
+      - name: distance_unit
+        in: query
+        required: false
+        description: 'Distance unit: km or mi (defaults to user setting)'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: details found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                    description: The selected year
+                  comparison:
+                    type: object
+                    nullable: true
+                    description: Year-over-year comparison (null if no previous year
+                      data)
+                    properties:
+                      previousYear:
+                        type: integer
+                        description: The previous year compared against
+                      distanceChangePercent:
+                        type: number
+                        description: Percentage change in distance
+                      countriesChange:
+                        type: integer
+                        description: Change in countries visited
+                      citiesChange:
+                        type: integer
+                        description: Change in cities visited
+                      daysChange:
+                        type: number
+                        description: Change in days traveling
+                  travelPatterns:
+                    type: object
+                    description: Travel pattern analysis
+                    properties:
+                      timeOfDay:
+                        type: object
+                        description: Distance distribution by time of day
+                      dayOfWeek:
+                        type: array
+                        items:
+                          type: integer
+                        description: Distance by day of week (Mon-Sun)
+                      seasonality:
+                        type: object
+                        description: Seasonal travel patterns
+                      activityBreakdown:
+                        type: object
+                        description: Breakdown by transportation mode
+                      topVisitedLocations:
+                        type: array
+                        description: Top 5 most visited locations
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            visitCount:
+                              type: integer
+                            totalDuration:
+                              type: integer
+        '401':
+          description: unauthorized
+  "/api/v1/locations":
+    get:
+      summary: Searches for location history near coordinates
+      tags:
+      - Locations
+      description: Searches for tracked location points near the specified coordinates,
+        optionally filtered by date range
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: lat
+        in: query
+        format: float
+        required: true
+        description: Latitude coordinate to search near
+        schema:
+          type: number
+      - name: lon
+        in: query
+        format: float
+        required: true
+        description: Longitude coordinate to search near
+        schema:
+          type: number
+      - name: limit
+        in: query
+        required: false
+        description: 'Maximum number of results (default: 50)'
+        schema:
+          type: integer
+      - name: date_from
+        in: query
+        required: false
+        description: Start date filter (YYYY-MM-DD)
+        schema:
+          type: string
+      - name: date_to
+        in: query
+        required: false
+        description: End date filter (YYYY-MM-DD)
+        schema:
+          type: string
+      - name: radius_override
+        in: query
+        required: false
+        description: Custom search radius in meters
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: locations found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: object
+                    nullable: true
+                    description: The search query parameters used
+                  locations:
+                    type: array
+                    description: Matching location groups
+                    items:
+                      type: object
+                      properties:
+                        place_name:
+                          type: string
+                          nullable: true
+                          description: Reverse-geocoded place name
+                        coordinates:
+                          type: array
+                          items:
+                            type: number
+                          description: "[latitude, longitude]"
+                        address:
+                          type: string
+                          nullable: true
+                          description: Full address
+                        total_visits:
+                          type: integer
+                          description: Total number of visits
+                        first_visit:
+                          type: string
+                          nullable: true
+                          description: First visit date
+                        last_visit:
+                          type: string
+                          nullable: true
+                          description: Last visit date
+                        visits:
+                          type: array
+                          items:
+                            type: object
+                          description: Individual visit details
+                  total_locations:
+                    type: integer
+                    description: Total matching locations
+                  search_metadata:
+                    type: object
+                    description: Search metadata and statistics
+        '400':
+          description: bad request - missing coordinates
+        '401':
+          description: unauthorized
+  "/api/v1/locations/suggestions":
+    get:
+      summary: Get location suggestions from text search
+      tags:
+      - Locations
+      description: Returns geocoded location suggestions based on a text search query
+        (min 2 characters)
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: q
+        in: query
+        required: true
+        description: Search query (minimum 2 characters)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: suggestions found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestions:
+                    type: array
+                    description: Matching location suggestions
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Place name
+                        address:
+                          type: string
+                          nullable: true
+                          description: Full address
+                        coordinates:
+                          type: array
+                          items:
+                            type: number
+                          description: "[latitude, longitude]"
+                        type:
+                          type: string
+                          nullable: true
+                          description: Place type (city, street, etc.)
+        '401':
+          description: unauthorized
+  "/api/v1/maps/hexagons":
+    get:
+      summary: Retrieves hexagon grid data for the map
+      tags:
+      - Maps
+      description: Returns hexagonal grid data for map visualization. Supports both
+        authenticated access and public sharing via UUID.
+      parameters:
+      - name: api_key
+        in: query
+        required: false
+        description: API Key (required for authenticated access, omit when using uuid)
+        schema:
+          type: string
+      - name: uuid
+        in: query
+        required: false
+        description: Sharing UUID for public access (alternative to api_key)
+        schema:
+          type: string
+      - name: start_date
+        in: query
+        required: false
+        description: Start date (ISO 8601 format)
+        schema:
+          type: string
+      - name: end_date
+        in: query
+        required: false
+        description: End date (ISO 8601 format)
+        schema:
+          type: string
+      - name: year
+        in: query
+        required: false
+        description: Year filter
+        schema:
+          type: integer
+      - name: month
+        in: query
+        required: false
+        description: Month filter (1-12)
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: hexagons found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: FeatureCollection
+                    description: GeoJSON type
+                  features:
+                    type: array
+                    description: Array of GeoJSON hexagon features
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: Feature
+                        geometry:
+                          type: object
+                          description: Hexagon polygon geometry
+                        properties:
+                          type: object
+                          description: Hexagon properties including point count
+                  metadata:
+                    type: object
+                    description: Request metadata
+                    properties:
+                      hexagon_count:
+                        type: integer
+                        description: Number of hexagons returned
+                      total_points:
+                        type: integer
+                        description: Total number of points in all hexagons
+                      source:
+                        type: string
+                        description: Data source type
+        '401':
+          description: unauthorized
+  "/api/v1/maps/hexagons/bounds":
+    get:
+      summary: Retrieves geographic bounds for hexagon data
+      tags:
+      - Maps
+      description: Returns the geographic bounding box for the user's location data
+        within the specified date range
+      parameters:
+      - name: api_key
+        in: query
+        required: false
+        description: API Key (required for authenticated access)
+        schema:
+          type: string
+      - name: uuid
+        in: query
+        required: false
+        description: Sharing UUID for public access
+        schema:
+          type: string
+      - name: start_date
+        in: query
+        required: false
+        description: Start date (ISO 8601 format)
+        schema:
+          type: string
+      - name: end_date
+        in: query
+        required: false
+        description: End date (ISO 8601 format)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: bounds found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the request was successful
+                  data:
+                    type: object
+                    description: Bounding box coordinates
+                    properties:
+                      south_west:
+                        type: object
+                        properties:
+                          lat:
+                            type: number
+                            description: Southwest latitude
+                          lng:
+                            type: number
+                            description: Southwest longitude
+                      north_east:
+                        type: object
+                        properties:
+                          lat:
+                            type: number
+                            description: Northeast latitude
+                          lng:
+                            type: number
+                            description: Northeast longitude
+        '401':
+          description: unauthorized
+  "/api/v1/maps/hexagons/fog":
+    get:
+      summary: Retrieves fog of war hexagon cell ids
+      tags:
+      - Maps
+      description: Returns precalculated H3 cell ids covering the user's visited locations
+        within the specified date range, used by the fog of war hexagon rendering
+        mode
+      parameters:
+      - name: api_key
+        in: query
+        required: false
+        description: API Key
+        schema:
+          type: string
+      - name: start_date
+        in: query
+        required: true
+        description: Start date (ISO 8601 format)
+        schema:
+          type: string
+      - name: end_date
+        in: query
+        required: true
+        description: End date (ISO 8601 format)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: cell ids found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  h3_indexes:
+                    type: array
+                    description: H3 cell ids covering visited locations
+                    items:
+                      type: string
+                  metadata:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        description: Number of cell ids returned
+        '400':
+          description: missing or invalid dates
+        '401':
+          description: unauthorized
+  "/api/v1/notes":
+    get:
+      summary: List notes
+      tags:
+      - Notes
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      - name: attachable_type
+        in: query
+        required: false
+        description: Filter by attachable type (e.g. Trip)
+        schema:
+          type: string
+      - name: attachable_id
+        in: query
+        required: false
+        description: Filter by attachable ID
+        schema:
+          type: integer
+      - name: standalone
+        in: query
+        required: false
+        description: Set to "true" to return only standalone notes
+        schema:
+          type: string
+      responses:
+        '200':
+          description: notes found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                      nullable: true
+                    body:
+                      type: string
+                      nullable: true
+                    latitude:
+                      type: number
+                      nullable: true
+                    longitude:
+                      type: number
+                      nullable: true
+                    attachable_type:
+                      type: string
+                      nullable: true
+                    attachable_id:
+                      type: integer
+                      nullable: true
+                    date:
+                      type: string
+                      nullable: true
+                      format: date
+                    noted_at:
+                      type: string
+                      format: datetime
+                    created_at:
+                      type: string
+                      format: datetime
+                    updated_at:
+                      type: string
+                      format: datetime
+                  required:
+                  - id
+                  - noted_at
+        '401':
+          description: unauthorized
+    post:
+      summary: Create note
+      tags:
+      - Notes
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '201':
+          description: note created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                    nullable: true
+                  body:
+                    type: string
+                    nullable: true
+                  latitude:
+                    type: number
+                    nullable: true
+                  longitude:
+                    type: number
+                    nullable: true
+                  attachable_type:
+                    type: string
+                    nullable: true
+                  attachable_id:
+                    type: integer
+                    nullable: true
+                  date:
+                    type: string
+                    nullable: true
+                    format: date
+                  noted_at:
+                    type: string
+                    format: datetime
+                  created_at:
+                    type: string
+                    format: datetime
+                  updated_at:
+                    type: string
+                    format: datetime
+        '422':
+          description: invalid request
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    body:
+                      type: string
+                    latitude:
+                      type: number
+                    longitude:
+                      type: number
+                    attachable_type:
+                      type: string
+                    attachable_id:
+                      type: integer
+                    noted_at:
+                      type: string
+                      format: datetime
+                  required:
+                  - noted_at
+  "/api/v1/notes/{id}":
+    get:
+      summary: Show note
+      tags:
+      - Notes
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Note ID
+        schema:
+          type: integer
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: note found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                    nullable: true
+                  body:
+                    type: string
+                    nullable: true
+                  latitude:
+                    type: number
+                    nullable: true
+                  longitude:
+                    type: number
+                    nullable: true
+                  attachable_type:
+                    type: string
+                    nullable: true
+                  attachable_id:
+                    type: integer
+                    nullable: true
+                  date:
+                    type: string
+                    nullable: true
+                    format: date
+                  noted_at:
+                    type: string
+                    format: datetime
+                  created_at:
+                    type: string
+                    format: datetime
+                  updated_at:
+                    type: string
+                    format: datetime
+        '404':
+          description: note not found
+        '401':
+          description: unauthorized
+    patch:
+      summary: Update note
+      tags:
+      - Notes
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Note ID
+        schema:
+          type: integer
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: note updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                    nullable: true
+                  body:
+                    type: string
+                    nullable: true
+                  latitude:
+                    type: number
+                    nullable: true
+                  longitude:
+                    type: number
+                    nullable: true
+                  attachable_type:
+                    type: string
+                    nullable: true
+                  attachable_id:
+                    type: integer
+                    nullable: true
+                  date:
+                    type: string
+                    nullable: true
+                    format: date
+                  noted_at:
+                    type: string
+                    format: datetime
+                  created_at:
+                    type: string
+                    format: datetime
+                  updated_at:
+                    type: string
+                    format: datetime
+        '404':
+          description: note not found
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    body:
+                      type: string
+                    latitude:
+                      type: number
+                    longitude:
+                      type: number
+                    noted_at:
+                      type: string
+                      format: datetime
+    delete:
+      summary: Delete note
+      tags:
+      - Notes
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Note ID
+        schema:
+          type: integer
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: note deleted
+        '404':
+          description: note not found
+        '401':
+          description: unauthorized
+  "/api/v1/overland/batches":
+    post:
+      summary: Creates a batch of points
+      tags:
+      - Batches
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '201':
+          description: Batch of points created
+        '401':
+          description: Unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                locations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: Feature
+                      geometry:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                            example: Point
+                          coordinates:
+                            type: array
+                            items:
+                              type: number
+                            example:
+                            - 13.356718
+                            - 52.502397
+                      properties:
+                        type: object
+                        properties:
+                          timestamp:
+                            type: string
+                            example: '2021-06-01T12:00:00Z'
+                            description: Timestamp in ISO 8601 format
+                          altitude:
+                            type: number
+                            example: 0
+                            description: Altitude in meters
+                          speed:
+                            type: number
+                            example: 0
+                            description: Speed in meters per second
+                          horizontal_accuracy:
+                            type: number
+                            example: 0
+                            description: Horizontal accuracy in meters
+                          vertical_accuracy:
+                            type: number
+                            example: 0
+                            description: Vertical accuracy in meters
+                          motion:
+                            type: array
+                            items:
+                              type: string
+                            example:
+                            - walking
+                            - running
+                            - driving
+                            - cycling
+                            - stationary
+                            description: 'Motion type, for example: automotive_navigation,
+                              fitness, other_navigation or other'
+                          activity:
+                            type: string
+                            example: unknown
+                            description: 'Activity type, e.g.: automotive_navigation,
+                              fitness, other_navigation or other'
+                          desired_accuracy:
+                            type: number
+                            example: 0
+                            description: Desired accuracy in meters
+                          deferred:
+                            type: number
+                            example: 0
+                            description: the distance in meters to defer location
+                              updates
+                          significant_change:
+                            type: string
+                            example: disabled
+                            description: a significant change mode, disabled, enabled
+                              or exclusive
+                          locations_in_payload:
+                            type: number
+                            example: 1
+                            description: the number of locations in the payload
+                          device_id:
+                            type: string
+                            example: 'iOS device #166'
+                            description: the device id
+                          unique_id:
+                            type: string
+                            example: '1234567890'
+                            description: the device's Unique ID as set by Apple
+                          wifi:
+                            type: string
+                            example: unknown
+                            description: the WiFi network name
+                          battery_state:
+                            type: string
+                            example: unknown
+                            description: the battery state, unknown, unplugged, charging
+                              or full
+                          battery_level:
+                            type: number
+                            example: 0
+                            description: the battery level percentage, from 0 to 1
+                    required:
+                    - geometry
+                    - properties
+            examples:
+              '0':
+                summary: Creates a batch of points
+                value:
+                  locations:
+                  - type: Feature
+                    geometry:
+                      type: Point
+                      coordinates:
+                      - 13.356718
+                      - 52.502397
+                    properties:
+                      timestamp: '2021-06-01T12:00:00Z'
+                      altitude: 0
+                      speed: 0
+                      horizontal_accuracy: 0
+                      vertical_accuracy: 0
+                      motion: []
+                      pauses: false
+                      activity: unknown
+                      desired_accuracy: 0
+                      deferred: 0
+                      significant_change: unknown
+                      locations_in_payload: 1
+                      device_id: 'iOS device #166'
+                      unique_id: '1234567890'
+                      wifi: unknown
+                      battery_state: unknown
+                      battery_level: 0
+  "/api/v1/owntracks/points":
+    post:
+      summary: Creates a point
+      tags:
+      - Points
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Point created
+        '401':
+          description: Unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                batt:
+                  type: number
+                  description: Device battery level (percentage)
+                lon:
+                  type: number
+                  description: Longitude coordinate
+                acc:
+                  type: number
+                  description: Accuracy of position in meters
+                bs:
+                  type: number
+                  description: Battery status (0=unknown, 1=unplugged, 2=charging,
+                    3=full)
+                inrids:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of region IDs device is currently in
+                BSSID:
+                  type: string
+                  description: Connected WiFi access point MAC address
+                SSID:
+                  type: string
+                  description: Connected WiFi network name
+                vac:
+                  type: number
+                  description: Vertical accuracy in meters
+                inregions:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of region names device is currently in
+                lat:
+                  type: number
+                  description: Latitude coordinate
+                topic:
+                  type: string
+                  description: MQTT topic in format owntracks/user/device
+                t:
+                  type: string
+                  description: Type of message (p=position, c=circle, etc)
+                conn:
+                  type: string
+                  description: Connection type (w=wifi, m=mobile, o=offline)
+                m:
+                  type: number
+                  description: Motion state (0=stopped, 1=moving)
+                tst:
+                  type: number
+                  description: Timestamp in Unix epoch time
+                alt:
+                  type: number
+                  description: Altitude in meters
+                _type:
+                  type: string
+                  description: Internal message type (usually "location")
+                tid:
+                  type: string
+                  description: Tracker ID used to display the initials of a user
+                _http:
+                  type: boolean
+                  description: Whether message was sent via HTTP (true) or MQTT (false)
+                ghash:
+                  type: string
+                  description: Geohash of location
+                isorcv:
+                  type: string
+                  description: ISO 8601 timestamp when message was received
+                isotst:
+                  type: string
+                  description: ISO 8601 timestamp of the location fix
+                disptst:
+                  type: string
+                  description: Human-readable timestamp of the location fix
+              required:
+              - lat
+              - lon
+              - tst
+              - _type
+            examples:
+              '0':
+                summary: Creates a point
+                value:
+                  batt: 85
+                  lon: -74.006
+                  acc: 8
+                  bs: 2
+                  inrids:
+                  - 5f1d1b
+                  BSSID: b0:f2:8:45:94:33
+                  SSID: Home Wifi
+                  vac: 3
+                  inregions:
+                  - home
+                  lat: 40.7128
+                  topic: owntracks/jane/iPhone 12 Pro
+                  t: p
+                  conn: w
+                  m: 1
+                  tst: 1706965203
+                  alt: 41
+                  _type: location
+                  tid: RO
+                  _http: true
+                  ghash: u33d773
+                  isorcv: '2024-02-03T13:00:03Z'
+                  isotst: '2024-02-03T13:00:03Z'
+                  disptst: '2024-02-03 13:00:03'
+  "/api/v1/photos":
+    get:
+      summary: Lists photos
+      tags:
+      - Photos
+      description: Returns photos from connected photo services (Immich, PhotoPrism)
+        within a date range
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: start_date
+        in: query
+        required: true
+        description: Start date in ISO8601 format, e.g. 2024-01-01
+        schema:
+          type: string
+      - name: end_date
+        in: query
+        required: true
+        description: End date in ISO8601 format, e.g. 2024-01-02
+        schema:
+          type: string
+      responses:
+        '200':
+          description: photos found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Photo ID from the source service
+                    latitude:
+                      type: number
+                      format: float
+                      description: Latitude where the photo was taken
+                    longitude:
+                      type: number
+                      format: float
+                      description: Longitude where the photo was taken
+                    localDateTime:
+                      type: string
+                      format: date-time
+                      description: Local date and time the photo was taken
+                    originalFileName:
+                      type: string
+                      description: Original file name of the photo
+                    city:
+                      type: string
+                      description: City where the photo was taken
+                    state:
+                      type: string
+                      description: State/region where the photo was taken
+                    country:
+                      type: string
+                      description: Country where the photo was taken
+                    type:
+                      type: string
+                      enum:
+                      - image
+                      - video
+                      description: Media type
+                    orientation:
+                      type: string
+                      enum:
+                      - portrait
+                      - landscape
+                      description: Photo orientation
+                    source:
+                      type: string
+                      enum:
+                      - immich
+                      - photoprism
+                      description: Photo source service
+                  required:
+                  - id
+                  - latitude
+                  - longitude
+                  - localDateTime
+                  - originalFileName
+                  - city
+                  - state
+                  - country
+                  - type
+                  - source
+  "/api/v1/photos/{id}/thumbnail":
+    get:
+      summary: Retrieves a photo thumbnail
+      tags:
+      - Photos
+      description: Returns the thumbnail image data for a specific photo. On success
+        returns binary image/jpeg data. On error returns JSON with error details.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Photo ID from the source service
+        schema:
+          type: string
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: source
+        in: query
+        required: true
+        description: Photo source (immich or photoprism)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: photo found
+        '404':
+          description: photo not found
+          content:
+            image/jpeg:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message
+  "/api/v1/places":
+    get:
+      summary: Retrieves all places for the authenticated user
+      tags:
+      - Places
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API key for authentication
+        schema:
+          type: string
+      - name: tag_ids
+        in: query
+        items:
+          type: integer
+        required: false
+        description: Filter places by tag IDs
+        schema:
+          type: array
+      - name: filter
+        in: query
+        required: false
+        enum:
+        - all
+        - manual
+        - confirmed
+        - tagged
+        description: "Visibility filter. Defaults to manual + confirmed-visit + tagged
+          places. Use \"all\" for every place (including suggested-only), or \"manual\"/\"confirmed\"/\"tagged\".:\n
+          * `all` \n * `manual` \n * `confirmed` \n * `tagged` \n "
+        schema:
+          type: string
+      responses:
+        '200':
+          description: places found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    latitude:
+                      type: number
+                      format: float
+                    longitude:
+                      type: number
+                      format: float
+                    source:
+                      type: string
+                    icon:
+                      type: string
+                      nullable: true
+                    color:
+                      type: string
+                      nullable: true
+                    visits_count:
+                      type: integer
+                    created_at:
+                      type: string
+                      format: date-time
+                    tags:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          name:
+                            type: string
+                          icon:
+                            type: string
+                          color:
+                            type: string
+                  required:
+                  - id
+                  - name
+                  - latitude
+                  - longitude
+        '401':
+          description: unauthorized
+    post:
+      summary: Creates a place
+      tags:
+      - Places
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API key for authentication
+        schema:
+          type: string
+      responses:
+        '201':
+          description: place created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  latitude:
+                    type: number
+                    format: float
+                  longitude:
+                    type: number
+                    format: float
+                  source:
+                    type: string
+                  icon:
+                    type: string
+                    nullable: true
+                  color:
+                    type: string
+                    nullable: true
+                  visits_count:
+                    type: integer
+                  created_at:
+                    type: string
+                    format: date-time
+                  tags:
+                    type: array
+        '422':
+          description: invalid request
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                latitude:
+                  type: number
+                  format: float
+                longitude:
+                  type: number
+                  format: float
+                source:
+                  type: string
+                tag_ids:
+                  type: array
+                  items:
+                    type: integer
+              required:
+              - name
+              - latitude
+              - longitude
+  "/api/v1/places/nearby":
+    get:
+      summary: Searches for nearby places using Photon geocoding API
+      tags:
+      - Places
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API key for authentication
+        schema:
+          type: string
+      - name: latitude
+        in: query
+        format: float
+        required: true
+        description: Latitude coordinate
+        schema:
+          type: number
+      - name: longitude
+        in: query
+        format: float
+        required: true
+        description: Longitude coordinate
+        schema:
+          type: number
+      - name: radius
+        in: query
+        format: float
+        required: false
+        description: 'Search radius in kilometers (default: 0.5)'
+        schema:
+          type: number
+      - name: limit
+        in: query
+        required: false
+        description: 'Maximum number of results (default: 10)'
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: nearby places found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  places:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        latitude:
+                          type: number
+                          format: float
+                        longitude:
+                          type: number
+                          format: float
+                        distance:
+                          type: number
+                          format: float
+                        type:
+                          type: string
+        '401':
+          description: unauthorized
+  "/api/v1/places/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Place ID
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Retrieves a specific place
+      tags:
+      - Places
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API key for authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: place found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  latitude:
+                    type: number
+                    format: float
+                  longitude:
+                    type: number
+                    format: float
+                  source:
+                    type: string
+                  icon:
+                    type: string
+                    nullable: true
+                  color:
+                    type: string
+                    nullable: true
+                  visits_count:
+                    type: integer
+                  created_at:
+                    type: string
+                    format: date-time
+                  tags:
+                    type: array
+        '404':
+          description: place not found
+        '401':
+          description: unauthorized
+    patch:
+      summary: Updates a place
+      tags:
+      - Places
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API key for authentication
+        schema:
+          type: string
+      responses:
+        '200':
+          description: place updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  latitude:
+                    type: number
+                    format: float
+                  longitude:
+                    type: number
+                    format: float
+                  tags:
+                    type: array
+        '404':
+          description: place not found
+        '422':
+          description: invalid request
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                latitude:
+                  type: number
+                  format: float
+                longitude:
+                  type: number
+                  format: float
+                tag_ids:
+                  type: array
+                  items:
+                    type: integer
+    delete:
+      summary: Deletes a place
+      tags:
+      - Places
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API key for authentication
+        schema:
+          type: string
+      responses:
+        '204':
+          description: place deleted
+        '404':
+          description: place not found
+        '401':
+          description: unauthorized
+  "/api/v1/plan":
+    get:
+      summary: Returns the current user's plan and feature flags
+      tags:
+      - Plan
+      description: Returns the user's plan (`pro` or `lite`), subscription status,
+        and per-feature flags. On self-hosted, every user is treated as pro and all
+        features return true.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: plan returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: string
+                    enum:
+                    - pro
+                    - lite
+                  status:
+                    type: string
+                  subscription_source:
+                    type: string
+                    nullable: true
+                  active_until:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  features:
+                    type: object
+                    properties:
+                      heatmap:
+                        type: boolean
+                      fog_of_war:
+                        type: boolean
+                      scratch_map:
+                        type: boolean
+                      globe_view:
+                        type: boolean
+                      integrations:
+                        type: boolean
+                      write_api:
+                        oneOf:
+                        - type: boolean
+                        - type: string
+                        description: true (Pro), false, or `create_only` for Lite
+                      sharing:
+                        type: boolean
+                      full_digest:
+                        type: boolean
+                      data_window:
+                        type: string
+                        nullable: true
+                        description: null for Pro, `12_months` for Lite
+        '401':
+          description: unauthorized
+  "/api/v1/points/tracked_months":
+    get:
+      summary: Returns list of tracked years and months
+      tags:
+      - Points
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: years and months found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    year:
+                      type: integer
+                      description: Year in YYYY format
+                    months:
+                      type: array
+                      items:
+                        type: string
+                        description: Three-letter month abbreviation
+                  required:
+                  - year
+                  - months
+                example:
+                - year: 2024
+                  months:
+                  - Jan
+                  - Feb
+                  - Mar
+                  - Apr
+                  - May
+                  - Jun
+                  - Jul
+                  - Aug
+                  - Sep
+                  - Oct
+                  - Nov
+                  - Dec
+        '401':
+          description: unauthorized
+  "/api/v1/points":
+    get:
+      summary: Retrieves all points
+      tags:
+      - Points
+      description: Returns paginated location points for the authenticated user, optionally
+        filtered by date range
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: start_at
+        in: query
+        description: Start date (i.e. 2024-02-03T13:00:03Z or 2024-02-03)
+        schema:
+          type: string
+      - name: end_at
+        in: query
+        description: End date (i.e. 2024-02-03T13:00:03Z or 2024-02-03)
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        description: Page number
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        description: Number of points per page
+        schema:
+          type: integer
+      - name: order
+        in: query
+        required: false
+        description: Order of points, valid values are `asc` or `desc`
+        schema:
+          type: string
+      responses:
+        '200':
+          description: points found
+          headers:
+            X-Current-Page:
+              schema:
+                type: integer
+              description: Current page number
+            X-Total-Pages:
+              schema:
+                type: integer
+              description: Total number of pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: Unique point identifier
+                    battery_status:
+                      type: number
+                      nullable: true
+                      description: Battery status code
+                    ping:
+                      type: number
+                      nullable: true
+                      description: Ping value
+                    battery:
+                      type: number
+                      nullable: true
+                      description: Battery level
+                    tracker_id:
+                      type: string
+                      nullable: true
+                      description: Tracker identifier
+                    topic:
+                      type: string
+                      nullable: true
+                      description: MQTT topic
+                    altitude:
+                      type: number
+                      nullable: true
+                      description: Altitude in meters
+                    longitude:
+                      type: number
+                      description: Longitude coordinate
+                    velocity:
+                      type: number
+                      nullable: true
+                      description: Velocity in km/h
+                    trigger:
+                      type: string
+                      nullable: true
+                      description: Trigger type
+                    bssid:
+                      type: string
+                      nullable: true
+                      description: WiFi access point MAC address
+                    ssid:
+                      type: string
+                      nullable: true
+                      description: WiFi network name
+                    connection:
+                      type: string
+                      nullable: true
+                      description: Connection type (w=wifi, m=mobile)
+                    vertical_accuracy:
+                      type: number
+                      nullable: true
+                      description: Vertical accuracy in meters
+                    accuracy:
+                      type: number
+                      nullable: true
+                      description: Horizontal accuracy in meters
+                    timestamp:
+                      type: number
+                      description: Unix timestamp of the point
+                    latitude:
+                      type: number
+                      description: Latitude coordinate
+                    mode:
+                      type: number
+                      nullable: true
+                      description: Tracking mode
+                    inrids:
+                      type: array
+                      items:
+                        type: string
+                      nullable: true
+                      description: Region IDs
+                    in_regions:
+                      type: array
+                      items:
+                        type: string
+                      nullable: true
+                      description: Region names
+                    raw_data:
+                      type: string
+                      nullable: true
+                      description: Raw payload from live tracking devices. Empty for
+                        points imported from files — the uploaded file keeps the original
+                        data.
+                    import_id:
+                      type: string
+                      nullable: true
+                      description: Import ID if point was imported
+                    city:
+                      type: string
+                      nullable: true
+                      description: Reverse-geocoded city name
+                    country:
+                      type: string
+                      nullable: true
+                      description: Reverse-geocoded country name
+                    created_at:
+                      type: string
+                      format: date-time
+                      description: Record creation timestamp
+                    updated_at:
+                      type: string
+                      format: date-time
+                      description: Record last update timestamp
+                    user_id:
+                      type: integer
+                      description: Owning user ID
+                    geodata:
+                      type: string
+                      nullable: true
+                      description: Reverse-geocoded geodata
+                    visit_id:
+                      type: string
+                      nullable: true
+                      description: Associated visit ID
+        '401':
+          description: unauthorized
+    post:
+      summary: Creates a batch of points
+      tags:
+      - Points
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Batch of points being processed
+        '401':
+          description: Unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                locations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      geometry:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                            example: Point
+                            description: the geometry type, always Point
+                          coordinates:
+                            type: array
+                            items:
+                              type: number
+                              example:
+                              - -122.40530871
+                              - 37.74430413
+                              description: the coordinates of the point, longitude
+                                and latitude
+                      properties:
+                        type: object
+                        properties:
+                          timestamp:
+                            type: string
+                            example: '2025-01-17T21:03:01Z'
+                            description: the timestamp of the point
+                          horizontal_accuracy:
+                            type: number
+                            example: 5
+                            description: the horizontal accuracy of the point in meters
+                          vertical_accuracy:
+                            type: number
+                            example: -1
+                            description: the vertical accuracy of the point in meters
+                          altitude:
+                            type: number
+                            example: 0
+                            description: the altitude of the point in meters
+                          speed:
+                            type: number
+                            example: 92.088
+                            description: the speed of the point in meters per second
+                          speed_accuracy:
+                            type: number
+                            example: 0
+                            description: the speed accuracy of the point in meters
+                              per second
+                          course_accuracy:
+                            type: number
+                            example: 0
+                            description: the course accuracy of the point in degrees
+                          track_id:
+                            type: string
+                            example: 799F32F5-89BB-45FB-A639-098B1B95B09F
+                            description: the track id of the point set by the device
+                          device_id:
+                            type: string
+                            example: 8D5D4197-245B-4619-A88B-2049100ADE46
+                            description: the device id of the point set by the device
+                    required:
+                    - geometry
+                    - properties
+            examples:
+              '0':
+                summary: Creates a batch of points
+                value:
+                  locations:
+                  - type: Feature
+                    geometry:
+                      type: Point
+                      coordinates:
+                      - -122.40530871
+                      - 37.74430413
+                    properties:
+                      battery_state: full
+                      battery_level: 0.7
+                      wifi: dawarich_home
+                      timestamp: '2025-01-17T21:03:01Z'
+                      horizontal_accuracy: 5
+                      vertical_accuracy: -1
+                      altitude: 0
+                      speed: 92.088
+                      speed_accuracy: 0
+                      course: 27.07
+                      course_accuracy: 0
+                      track_id: 799F32F5-89BB-45FB-A639-098B1B95B09F
+                      device_id: 8D5D4197-245B-4619-A88B-2049100ADE46
+  "/api/v1/points/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Point ID
+      schema:
+        type: string
+    patch:
+      summary: Updates a point
+      tags:
+      - Points
+      description: Updates the latitude and/or longitude of a point
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: point updated
+        '422':
+          description: invalid request
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                point:
+                  type: object
+                  properties:
+                    latitude:
+                      type: number
+                      description: Updated latitude coordinate
+                    longitude:
+                      type: number
+                      description: Updated longitude coordinate
+    delete:
+      summary: Deletes a point
+      tags:
+      - Points
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: point deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message
+        '401':
+          description: unauthorized
+  "/api/v1/points/bulk_destroy":
+    delete:
+      summary: Bulk deletes points
+      tags:
+      - Points
+      description: Deletes multiple points by their IDs
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: points deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message
+                  count:
+                    type: integer
+                    description: Number of points deleted
+        '422':
+          description: no points selected
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                point_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: Array of point IDs to delete
+              required:
+              - point_ids
+  "/api/v1/points/reapply_anomaly_filter":
+    post:
+      summary: Re-evaluates anomaly flags for all of the user's points
+      tags:
+      - Points
+      description: Clears existing anomaly flags and re-runs the anomaly detection
+        pipeline against every point belonging to the user. A per-user lock prevents
+        concurrent runs.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '202':
+          description: re-evaluation queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '409':
+          description: re-evaluation already in progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '401':
+          description: unauthorized
+  "/api/v1/recalculations":
+    post:
+      summary: Queues a full recalculation of the user's data
+      tags:
+      - Recalculations
+      description: Enqueues `Users::RecalculateDataJob`, which regenerates tracks,
+        stats, visits, and digests in the background. Optionally scoped to a single
+        year. A per-user lock prevents concurrent recalculations.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: year
+        in: query
+        required: false
+        description: Restrict the recalculation to a single year (2000..current_year+1)
+        schema:
+          type: integer
+      responses:
+        '202':
+          description: recalculation queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: invalid year
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '409':
+          description: recalculation already in progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '401':
+          description: unauthorized
+  "/api/v1/residency":
+    get:
+      summary: Returns per-country day counts for tax residency calculations
+      tags:
+      - Residency
+      description: Computes per-country day counts and consecutive-day periods for
+        the requested year. Pro-only on Cloud; available to all self-hosted users.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: year
+        in: query
+        required: false
+        description: Year to compute residency for. Defaults to the latest year that
+          has data for the user.
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: residency computed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                  counting_mode:
+                    type: string
+                    description: e.g. any_presence
+                  total_tracked_days:
+                    type: integer
+                  available_years:
+                    type: array
+                    items:
+                      type: integer
+                  countries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        country_name:
+                          type: string
+                        country_code:
+                          type: string
+                          nullable: true
+                        days:
+                          type: integer
+                        periods:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              start_date:
+                                type: string
+                                format: date
+                              end_date:
+                                type: string
+                                format: date
+                              consecutive_days:
+                                type: integer
+        '403':
+          description: pro plan required (cloud lite users)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '401':
+          description: unauthorized
+  "/api/v1/settings/mobile":
+    get:
+      summary: Retrieves mobile app settings
+      tags:
+      - Settings
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: mobile settings found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    type: object
+                    properties:
+                      tracking_mode:
+                        type: string
+                        example: precise
+                        enum:
+                        - precise
+                        - significant
+                      tracking_visits:
+                        type: boolean
+                        example: true
+                      track_visits_independently:
+                        type: boolean
+                        example: false
+                      auto_start:
+                        type: boolean
+                        example: true
+                      distance_filter:
+                        type: number
+                        example: 100
+                      time_filter:
+                        type: number
+                        example: 10
+                      track_break:
+                        type: number
+                        example: 30
+                      accuracy:
+                        type: number
+                        example: 3
+                      show_background_location_indicator:
+                        type: boolean
+                        example: true
+                      upload_automatically:
+                        type: boolean
+                        example: true
+                      upload_all_on_tracking_stop:
+                        type: boolean
+                        example: false
+                      batch_size:
+                        type: number
+                        example: 100
+                  updated_at:
+                    type: string
+                    nullable: true
+                    example: '2026-07-01T10:00:00Z'
+                  status:
+                    type: string
+                    example: success
+        '401':
+          description: unauthorized
+    patch:
+      summary: Updates mobile app settings
+      tags:
+      - Settings
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: mobile settings updated
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tracking_mode:
+                  type: string
+                  example: precise
+                  enum:
+                  - precise
+                  - significant
+                  description: Location tracking mode
+                tracking_visits:
+                  type: boolean
+                  example: true
+                  description: Whether visit tracking is enabled
+                track_visits_independently:
+                  type: boolean
+                  example: false
+                  description: Whether visits are tracked independently of route tracking
+                auto_start:
+                  type: boolean
+                  example: true
+                  description: Whether tracking starts automatically
+                distance_filter:
+                  type: number
+                  example: 100
+                  description: Minimum distance between tracked points in meters (1-10000)
+                time_filter:
+                  type: number
+                  example: 10
+                  description: Minimum time between tracked points in seconds (1-3600)
+                track_break:
+                  type: number
+                  example: 30
+                  description: Minutes of inactivity before a track is split (1-1440)
+                accuracy:
+                  type: number
+                  example: 3
+                  description: Location accuracy level (1-6)
+                show_background_location_indicator:
+                  type: boolean
+                  example: true
+                  description: Whether the OS background-location indicator is shown
+                    (iOS)
+                upload_automatically:
+                  type: boolean
+                  example: true
+                  description: Whether points upload automatically while tracking
+                upload_all_on_tracking_stop:
+                  type: boolean
+                  example: false
+                  description: Whether pending points upload when tracking stops
+                batch_size:
+                  type: number
+                  example: 100
+                  description: Number of points per automatic upload batch (1-1000)
+            examples:
+              '0':
+                summary: Updates mobile app settings
+                value:
+                  settings:
+                    tracking_mode: precise
+                    tracking_visits: true
+                    track_visits_independently: false
+                    auto_start: true
+                    distance_filter: 100
+                    time_filter: 10
+                    track_break: 30
+                    accuracy: 3
+                    show_background_location_indicator: true
+                    upload_automatically: true
+                    upload_all_on_tracking_stop: false
+                    batch_size: 100
+  "/api/v1/settings":
+    patch:
+      summary: Updates user settings
+      tags:
+      - Settings
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: settings updated
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                route_opacity:
+                  type: number
+                  example: 60
+                  description: Route opacity percentage (0-100)
+                meters_between_routes:
+                  type: number
+                  example: 500
+                  description: Minimum distance between routes in meters
+                minutes_between_routes:
+                  type: number
+                  example: 30
+                  description: Minimum time between routes in minutes
+                fog_of_war_meters:
+                  type: number
+                  example: 50
+                  description: Fog of war radius in meters
+                time_threshold_minutes:
+                  type: number
+                  example: 30
+                  description: Time threshold for grouping points in minutes
+                merge_threshold_minutes:
+                  type: number
+                  example: 15
+                  description: Threshold for merging nearby points in minutes
+                preferred_map_layer:
+                  type: string
+                  example: OpenStreetMap
+                  description: Preferred map layer/tile provider
+                speed_colored_routes:
+                  type: boolean
+                  example: false
+                  description: Whether to color routes based on speed
+                points_rendering_mode:
+                  type: string
+                  example: raw
+                  description: How to render points on the map (raw, heatmap, etc.)
+                live_map_enabled:
+                  type: boolean
+                  example: true
+                  description: Whether live map updates are enabled
+                immich_url:
+                  type: string
+                  example: https://immich.example.com
+                  description: Immich server URL for photo integration
+                immich_api_key:
+                  type: string
+                  example: your-immich-api-key
+                  description: API key for Immich photo service
+                photoprism_url:
+                  type: string
+                  example: https://photoprism.example.com
+                  description: PhotoPrism server URL for photo integration
+                photoprism_api_key:
+                  type: string
+                  example: your-photoprism-api-key
+                  description: API key for PhotoPrism photo service
+                speed_color_scale:
+                  type: string
+                  example: viridis
+                  description: Color scale for speed-colored routes
+                fog_of_war_threshold:
+                  type: number
+                  example: 100
+                  description: Fog of war threshold value
+                maps:
+                  type: object
+                  properties:
+                    distance_unit:
+                      type: string
+                      enum:
+                      - km
+                      - mi
+                      example: km
+                      description: Distance unit used for displayed distances
+            examples:
+              '0':
+                summary: Updates user settings
+                value:
+                  settings:
+                    route_opacity: 60
+                    meters_between_routes: 500
+                    minutes_between_routes: 30
+                    fog_of_war_meters: 50
+                    time_threshold_minutes: 30
+                    merge_threshold_minutes: 15
+                    preferred_map_layer: OpenStreetMap
+                    speed_colored_routes: false
+                    points_rendering_mode: raw
+                    live_map_enabled: true
+                    immich_url: https://immich.example.com
+                    immich_api_key: your-immich-api-key
+                    photoprism_url: https://photoprism.example.com
+                    photoprism_api_key: your-photoprism-api-key
+                    speed_color_scale: viridis
+                    fog_of_war_threshold: 100
+                    maps:
+                      distance_unit: km
+    get:
+      summary: Retrieves user settings
+      tags:
+      - Settings
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: settings found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    type: object
+                    properties:
+                      route_opacity:
+                        type: number
+                        example: 60
+                        description: Route opacity percentage (0-100)
+                      meters_between_routes:
+                        oneOf:
+                        - type: number
+                        - type: string
+                        example: 500
+                        description: Minimum distance between routes in meters
+                      minutes_between_routes:
+                        oneOf:
+                        - type: number
+                        - type: string
+                        example: 30
+                        description: Minimum time between routes in minutes
+                      fog_of_war_meters:
+                        oneOf:
+                        - type: number
+                        - type: string
+                        example: 50
+                        description: Fog of war radius in meters
+                      time_threshold_minutes:
+                        oneOf:
+                        - type: number
+                        - type: string
+                        example: 30
+                        description: Time threshold for grouping points in minutes
+                      merge_threshold_minutes:
+                        oneOf:
+                        - type: number
+                        - type: string
+                        example: 15
+                        description: Threshold for merging nearby points in minutes
+                      preferred_map_layer:
+                        type: string
+                        example: OpenStreetMap
+                        description: Preferred map layer/tile provider
+                      speed_colored_routes:
+                        type: boolean
+                        example: false
+                        description: Whether to color routes based on speed
+                      points_rendering_mode:
+                        type: string
+                        example: raw
+                        description: How to render points on the map (raw, heatmap,
+                          etc.)
+                      live_map_enabled:
+                        type: boolean
+                        example: true
+                        description: Whether live map updates are enabled
+                      immich_url:
+                        oneOf:
+                        - type: string
+                        - type: 'null'
+                        example: https://immich.example.com
+                        description: Immich server URL for photo integration
+                      immich_api_key:
+                        oneOf:
+                        - type: string
+                        - type: 'null'
+                        example: your-immich-api-key
+                        description: API key for Immich photo service
+                      photoprism_url:
+                        oneOf:
+                        - type: string
+                        - type: 'null'
+                        example: https://photoprism.example.com
+                        description: PhotoPrism server URL for photo integration
+                      photoprism_api_key:
+                        oneOf:
+                        - type: string
+                        - type: 'null'
+                        example: your-photoprism-api-key
+                        description: API key for PhotoPrism photo service
+                      speed_color_scale:
+                        oneOf:
+                        - type: string
+                        - type: 'null'
+                        example: viridis
+                        description: Color scale for speed-colored routes
+                      fog_of_war_threshold:
+                        oneOf:
+                        - type: number
+                        - type: string
+                        - type: 'null'
+                        example: 100
+                        description: Fog of war threshold value
+        '401':
+          description: unauthorized
+  "/api/v1/settings/transportation_recalculation_status":
+    get:
+      summary: Retrieves transportation mode recalculation status
+      tags:
+      - Settings
+      description: Returns the current status of transportation mode recalculation
+        for all tracks
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: status found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    nullable: true
+                    description: Current recalculation status
+                  total_tracks:
+                    type: integer
+                    nullable: true
+                    description: Total number of tracks to process
+                  processed_tracks:
+                    type: integer
+                    nullable: true
+                    description: Number of tracks processed so far
+                  started_at:
+                    type: string
+                    nullable: true
+                    description: When recalculation started
+                  completed_at:
+                    type: string
+                    nullable: true
+                    description: When recalculation completed
+                  error_message:
+                    type: string
+                    nullable: true
+                    description: Error message if recalculation failed
+        '401':
+          description: unauthorized
+  "/api/v1/stats":
+    get:
+      summary: Retrieves all stats
+      tags:
+      - Stats
+      description: Returns aggregated statistics including total distance, points
+        tracked, countries and cities visited, with yearly breakdowns
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: stats found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalDistanceKm:
+                    type: number
+                    description: Total distance traveled in kilometers
+                  totalPointsTracked:
+                    type: number
+                    description: Total number of location points tracked
+                  totalReverseGeocodedPoints:
+                    type: number
+                    description: Total points with reverse geocoding data
+                  totalCountriesVisited:
+                    type: number
+                    description: Total unique countries visited
+                  totalCitiesVisited:
+                    type: number
+                    description: Total unique cities visited
+                  yearlyStats:
+                    type: array
+                    description: Statistics broken down by year
+                    items:
+                      type: object
+                      properties:
+                        year:
+                          type: integer
+                          description: The year
+                        totalDistanceKm:
+                          type: number
+                          description: Distance traveled in km for this year
+                        totalCountriesVisited:
+                          type: number
+                          description: Countries visited this year
+                        totalCitiesVisited:
+                          type: number
+                          description: Cities visited this year
+                        monthlyDistanceKm:
+                          type: object
+                          description: Distance traveled per month in km
+                          properties:
+                            january:
+                              type: number
+                            february:
+                              type: number
+                            march:
+                              type: number
+                            april:
+                              type: number
+                            may:
+                              type: number
+                            june:
+                              type: number
+                            july:
+                              type: number
+                            august:
+                              type: number
+                            september:
+                              type: number
+                            october:
+                              type: number
+                            november:
+                              type: number
+                            december:
+                              type: number
+                      required:
+                      - year
+                      - totalDistanceKm
+                      - totalCountriesVisited
+                      - totalCitiesVisited
+                      - monthlyDistanceKm
+                required:
+                - totalDistanceKm
+                - totalPointsTracked
+                - totalReverseGeocodedPoints
+                - totalCountriesVisited
+                - totalCitiesVisited
+                - yearlyStats
+        '401':
+          description: unauthorized
+  "/api/v1/subscriptions/callback":
+    post:
+      summary: Processes a subscription callback
+      tags:
+      - Subscriptions
+      description: Processes a JWT-encoded subscription callback to update user subscription
+        status. This endpoint uses a shared webhook secret header and JWT tokens for
+        verification instead of API key authentication.
+      security: []
+      parameters:
+      - name: X-Webhook-Secret
+        in: header
+        required: true
+        description: Shared webhook secret used to authenticate the caller
+        schema:
+          type: string
+      responses:
+        '200':
+          description: subscription updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message
+        '401':
+          description: invalid token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: JWT-encoded subscription token
+              required:
+              - token
+  "/api/v1/tags/privacy_zones":
+    get:
+      summary: Retrieves privacy zone tags
+      tags:
+      - Tags
+      description: Returns all tags configured as privacy zones, including their associated
+        places
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: privacy zones found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    tag_id:
+                      type: integer
+                      description: Tag ID
+                    tag_name:
+                      type: string
+                      description: Tag name
+                    tag_icon:
+                      type: string
+                      nullable: true
+                      description: Tag icon
+                    tag_color:
+                      type: string
+                      nullable: true
+                      description: Tag color
+                    radius_meters:
+                      type: integer
+                      nullable: true
+                      description: Privacy zone radius in meters
+                    places:
+                      type: array
+                      description: Places associated with this privacy zone
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            description: Place ID
+                          name:
+                            type: string
+                            description: Place name
+                          latitude:
+                            type: number
+                            description: Latitude coordinate
+                          longitude:
+                            type: number
+                            description: Longitude coordinate
+        '401':
+          description: unauthorized
+  "/api/v1/timeline":
+    get:
+      summary: Retrieves timeline data for a date range
+      tags:
+      - Timeline
+      description: Returns day-by-day timeline data including visits, tracks, and
+        photos for the authenticated user. Maximum date range is 31 days.
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: start_at
+        in: query
+        required: true
+        description: Start date (ISO 8601 format, e.g. 2024-01-01)
+        schema:
+          type: string
+      - name: end_at
+        in: query
+        required: true
+        description: End date (ISO 8601 format, e.g. 2024-01-31)
+        schema:
+          type: string
+      - name: distance_unit
+        in: query
+        required: false
+        description: 'Distance unit: km or mi (defaults to user setting)'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: timeline data found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days:
+                    type: array
+                    description: Array of day objects with timeline data
+                    items:
+                      type: object
+        '400':
+          description: bad request - missing parameters
+        '401':
+          description: unauthorized
+  "/api/v1/traccar/points":
+    post:
+      summary: Creates a point
+      tags:
+      - Points
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Point created
+        '401':
+          description: Unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_id:
+                  type: string
+                  description: Tracker / device identifier
+                location:
+                  type: object
+                  properties:
+                    timestamp:
+                      type: string
+                      description: ISO 8601 timestamp of the location fix
+                    latitude:
+                      type: number
+                      description: Latitude in decimal degrees
+                    longitude:
+                      type: number
+                      description: Longitude in decimal degrees
+                    accuracy:
+                      type: number
+                      description: Horizontal accuracy in meters
+                    speed:
+                      type: number
+                      description: Speed in meters per second
+                    heading:
+                      type: number
+                      description: Bearing in degrees (0-360)
+                    altitude:
+                      type: number
+                      description: Altitude in meters
+                    is_moving:
+                      type: boolean
+                      description: Whether the device was moving at the time of the
+                        fix
+                    odometer:
+                      type: number
+                      description: Cumulative distance traveled in meters
+                    event:
+                      type: string
+                      description: Event type that produced the fix (e.g. motionchange,
+                        heartbeat)
+                  required:
+                  - latitude
+                  - longitude
+                  - timestamp
+                battery:
+                  type: object
+                  properties:
+                    level:
+                      type: number
+                      description: Battery level as a 0-1 fraction
+                    is_charging:
+                      type: boolean
+                      description: Whether the device is currently charging
+                activity:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      description: Detected activity (walking, running, in_vehicle,
+                        ...)
+              required:
+              - device_id
+              - location
+            examples:
+              '0':
+                summary: Creates a point
+                value:
+                  device_id: iphone-jane
+                  location:
+                    timestamp: '2026-04-23T12:34:56Z'
+                    latitude: 52.52
+                    longitude: 13.405
+                    accuracy: 5
+                    speed: 1.4
+                    heading: 90
+                    altitude: 42
+                    is_moving: true
+                    odometer: 1200
+                    event: motionchange
+                  battery:
+                    level: 0.85
+                    is_charging: true
+                  activity:
+                    type: walking
+  "/api/v1/tracks/{track_id}/points":
+    parameters:
+    - name: track_id
+      in: path
+      required: true
+      description: Track ID
+      schema:
+        type: integer
+    get:
+      summary: Retrieves points for a track
+      tags:
+      - Tracks
+      description: Returns location points belonging to a specific track, ordered
+        by timestamp ascending
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        description: Page number (optional pagination)
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        description: Items per page (max 1000)
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: points found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: Point ID
+                    latitude:
+                      type: string
+                      nullable: true
+                      description: Latitude coordinate
+                    longitude:
+                      type: string
+                      nullable: true
+                      description: Longitude coordinate
+                    timestamp:
+                      type: number
+                      description: Unix timestamp
+                    velocity:
+                      type: number
+                      nullable: true
+                      description: Velocity in km/h
+                    country_name:
+                      type: string
+                      nullable: true
+                      description: Country name from reverse geocoding
+        '404':
+          description: track not found
+        '401':
+          description: unauthorized
+  "/api/v1/tracks":
+    get:
+      summary: Retrieves tracks as GeoJSON
+      tags:
+      - Tracks
+      description: Returns paginated tracks as a GeoJSON FeatureCollection with LineString
+        geometries
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      - name: start_at
+        in: query
+        required: false
+        description: Start date filter (ISO 8601 format)
+        schema:
+          type: string
+      - name: end_at
+        in: query
+        required: false
+        description: End date filter (ISO 8601 format)
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        description: Page number
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        description: Items per page
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: tracks found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: FeatureCollection
+                    description: GeoJSON type
+                  features:
+                    type: array
+                    description: Array of GeoJSON Feature objects
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: Feature
+                        geometry:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                              example: LineString
+                            coordinates:
+                              type: array
+                              description: Array of [longitude, latitude] coordinate
+                                pairs
+                              items:
+                                type: array
+                                items:
+                                  type: number
+                        properties:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: Track ID
+                            color:
+                              type: string
+                              description: Display color for the track
+                            start_at:
+                              type: string
+                              description: Track start time (ISO 8601)
+                            end_at:
+                              type: string
+                              description: Track end time (ISO 8601)
+                            distance:
+                              type: number
+                              description: Distance in meters
+                            avg_speed:
+                              type: number
+                              description: Average speed in km/h
+                            duration:
+                              type: number
+                              description: Duration in seconds
+                            dominant_mode:
+                              type: string
+                              nullable: true
+                              description: Primary transportation mode
+                            dominant_mode_emoji:
+                              type: string
+                              nullable: true
+                              description: Emoji for transportation mode
+        '401':
+          description: unauthorized
+  "/api/v1/tracks/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Track ID
+      schema:
+        type: integer
+    get:
+      summary: Retrieves a single track as GeoJSON
+      tags:
+      - Tracks
+      description: Returns a single track as a GeoJSON FeatureCollection, including
+        track segment details
+      parameters:
+      - name: api_key
+        in: query
+        required: true
+        description: API Key
+        schema:
+          type: string
+      responses:
+        '200':
+          description: track found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: FeatureCollection
+                  features:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: track not found
+        '401':
+          description: unauthorized
+  "/api/v1/users/exist":
+    post:
+      summary: Checks which user IDs exist in Dawarich
+      tags:
+      - Users
+      description: Internal endpoint used by the Subscription Manager. Authenticated
+        via the `X-Webhook-Secret` header (NOT an api_key). Given a list of user IDs,
+        returns which ones exist and which are missing.
+      parameters:
+      - name: X-Webhook-Secret
+        in: header
+        required: true
+        description: Shared secret matching SUBSCRIPTION_WEBHOOK_SECRET on the server
+        schema:
+          type: string
+      responses:
+        '200':
+          description: check completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  existing:
+                    type: array
+                    items:
+                      type: integer
+                  missing:
+                    type: array
+                    items:
+                      type: integer
+        '401':
+          description: invalid webhook secret
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: ids parameter missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: User IDs to check for existence
+              required:
+              - ids
+  "/api/v1/users/me/two_factor/setup":
+    post:
+      summary: Begins TOTP enrollment
+      tags:
+      - Users
+      description: Generates a fresh TOTP secret and provisioning URI. The secret
+        is rotated on each call until 2FA is confirmed via `/two_factor/confirm`.
+        Requires the user's current password.
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: 'Bearer token in the format: Bearer {api_key}'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: secret provisioned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  provisioning_uri:
+                    type: string
+                    description: otpauth:// URI for authenticator apps
+                  secret:
+                    type: string
+                    description: Base32-encoded TOTP secret
+        '401':
+          description: wrong or missing password
+        '409':
+          description: two-factor already enabled
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  format: password
+              required:
+              - password
+  "/api/v1/users/me/two_factor/confirm":
+    post:
+      summary: Confirms TOTP enrollment
+      tags:
+      - Users
+      description: Verifies the supplied TOTP code against the secret provisioned
+        by `/two_factor/setup`. On success, enables 2FA and returns single-use backup
+        codes.
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: 'Bearer token in the format: Bearer {api_key}'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: two-factor enabled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backup_codes:
+                    type: array
+                    items:
+                      type: string
+                    description: Single-use recovery codes
+        '422':
+          description: invalid otp code
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  format: password
+                otp_code:
+                  type: string
+                  description: Current 6-digit TOTP code
+              required:
+              - password
+              - otp_code
+  "/api/v1/users/me/two_factor/backup_codes":
+    post:
+      summary: Regenerates two-factor backup codes
+      tags:
+      - Users
+      description: Replaces all existing backup codes with a fresh set. Requires the
+        user's current password.
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: 'Bearer token in the format: Bearer {api_key}'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: backup codes regenerated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backup_codes:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: wrong or missing password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  format: password
+              required:
+              - password
+  "/api/v1/users/me/two_factor":
+    delete:
+      summary: Disables two-factor authentication
+      tags:
+      - Users
+      description: Removes the TOTP secret, clears backup codes, and disables 2FA.
+        Requires both the current password AND a valid TOTP code (or unused backup
+        code).
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: 'Bearer token in the format: Bearer {api_key}'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: two-factor disabled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: missing or invalid credentials
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  format: password
+                  description: Current password
+                otp_code:
+                  type: string
+                  description: Current TOTP code or unused backup code
+              required:
+              - password
+              - otp_code
+  "/api/v1/users/me":
+    get:
+      summary: Returns the current user
+      tags:
+      - Users
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: 'Bearer token in the format: Bearer {api_key}'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: user found
+        '401':
+          description: unauthorized
+    delete:
+      summary: Requests deletion of the current user account
+      tags:
+      - Users
+      description: On Cloud, sends a confirmation email and returns 202; the account
+        is only deleted after the user clicks the confirmation link. On self-hosted,
+        deletes the account immediately when the correct password is supplied.
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: 'Bearer token in the format: Bearer {api_key}'
+        schema:
+          type: string
+      responses:
+        '202':
+          description: confirmation email sent (cloud)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '422':
+          description: cannot delete account (family owner with members)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  format: password
+                  description: Required on self-hosted to confirm account deletion
+  "/api/v1/visits":
+    get:
+      summary: List visits
+      tags:
+      - Visits
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      - name: start_at
+        in: query
+        required: false
+        description: Start date (ISO 8601)
+        schema:
+          type: string
+      - name: end_at
+        in: query
+        required: false
+        description: End date (ISO 8601)
+        schema:
+          type: string
+      - name: selection
+        in: query
+        required: false
+        description: Set to "true" for area-based search
+        schema:
+          type: string
+      - name: sw_lat
+        in: query
+        required: false
+        description: Southwest latitude for area search
+        schema:
+          type: number
+      - name: sw_lng
+        in: query
+        required: false
+        description: Southwest longitude for area search
+        schema:
+          type: number
+      - name: ne_lat
+        in: query
+        required: false
+        description: Northeast latitude for area search
+        schema:
+          type: number
+      - name: ne_lng
+        in: query
+        required: false
+        description: Northeast longitude for area search
+        schema:
+          type: number
+      responses:
+        '200':
+          description: visits found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    status:
+                      type: string
+                      enum:
+                      - suggested
+                      - confirmed
+                      - declined
+                    started_at:
+                      type: string
+                      format: datetime
+                    ended_at:
+                      type: string
+                      format: datetime
+                    duration:
+                      type: integer
+                      description: Duration in minutes
+                    place:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        latitude:
+                          type: number
+                        longitude:
+                          type: number
+                        city:
+                          type: string
+                        country:
+                          type: string
+                  required:
+                  - id
+                  - name
+                  - status
+                  - started_at
+                  - ended_at
+                  - duration
+        '401':
+          description: unauthorized
+    post:
+      summary: Create visit
+      tags:
+      - Visits
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: visit created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  status:
+                    type: string
+                  started_at:
+                    type: string
+                    format: datetime
+                  ended_at:
+                    type: string
+                    format: datetime
+                  duration:
+                    type: integer
+                  place:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      latitude:
+                        type: number
+                      longitude:
+                        type: number
+        '422':
+          description: invalid request
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visit:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    latitude:
+                      type: number
+                    longitude:
+                      type: number
+                    started_at:
+                      type: string
+                      format: datetime
+                    ended_at:
+                      type: string
+                      format: datetime
+                  required:
+                  - name
+                  - latitude
+                  - longitude
+                  - started_at
+                  - ended_at
+  "/api/v1/visits/{id}":
+    patch:
+      summary: Update visit
+      tags:
+      - Visits
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Visit ID
+        schema:
+          type: integer
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: visit updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  status:
+                    type: string
+                  started_at:
+                    type: string
+                    format: datetime
+                  ended_at:
+                    type: string
+                    format: datetime
+                  duration:
+                    type: integer
+                  place:
+                    type: object
+        '404':
+          description: visit not found
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visit:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    place_id:
+                      type: integer
+                    area_id:
+                      type: integer
+                      nullable: true
+                    status:
+                      type: string
+                      enum:
+                      - suggested
+                      - confirmed
+                      - declined
+    delete:
+      summary: Delete visit
+      tags:
+      - Visits
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Visit ID
+        schema:
+          type: integer
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '204':
+          description: visit deleted
+        '404':
+          description: visit not found
+        '401':
+          description: unauthorized
+  "/api/v1/visits/{id}/possible_places":
+    get:
+      summary: Get possible places for visit
+      tags:
+      - Visits
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Visit ID
+        schema:
+          type: integer
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: possible places found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type:
+                      - integer
+                      - 'null'
+                    name:
+                      type: string
+                    latitude:
+                      type: number
+                    longitude:
+                      type: number
+                    osm_id:
+                      type:
+                      - integer
+                      - string
+                      - 'null'
+                    osm_type:
+                      type:
+                      - string
+                      - 'null'
+                    osm_key:
+                      type:
+                      - string
+                      - 'null'
+                    osm_value:
+                      type:
+                      - string
+                      - 'null'
+                    city:
+                      type:
+                      - string
+                      - 'null'
+                    country:
+                      type:
+                      - string
+                      - 'null'
+                    source:
+                      type: string
+                    geodata:
+                      type: object
+        '404':
+          description: visit not found
+        '401':
+          description: unauthorized
+  "/api/v1/visits/merge":
+    post:
+      summary: Merge visits
+      tags:
+      - Visits
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: visits merged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  status:
+                    type: string
+                  started_at:
+                    type: string
+                    format: datetime
+                  ended_at:
+                    type: string
+                    format: datetime
+                  duration:
+                    type: integer
+                  place:
+                    type: object
+        '422':
+          description: invalid request
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visit_ids:
+                  type: array
+                  items:
+                    type: integer
+                  minItems: 2
+                  description: Array of visit IDs to merge (minimum 2)
+              required:
+              - visit_ids
+  "/api/v1/visits/bulk_update":
+    post:
+      summary: Bulk update visits
+      tags:
+      - Visits
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        description: Bearer token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: visits updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  updated_count:
+                    type: integer
+        '422':
+          description: invalid request
+        '401':
+          description: unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visit_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: Array of visit IDs to update
+                status:
+                  type: string
+                  enum:
+                  - suggested
+                  - confirmed
+                  - declined
+                  description: New status for the visits
+              required:
+              - visit_ids
+              - status
+servers:
+- url: http://{defaultHost}
+  variables:
+    defaultHost:
+      default: localhost:3000
+components:
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: query
+      description: API key passed as a query parameter
+    bearer_auth:
+      type: http
+      scheme: bearer
+      description: Bearer token authentication

@@ -1,0 +1,95 @@
+<% times = visit_entry_times(entry); status = visit_entry_status(entry); all_day = visit_entry_all_day?(entry) %>
+<% coords = entry[:place] || entry[:area] || entry[:suggested_places]&.first %>
+<li class="visit-row<%= ' visit-row--suggested' if status == 'suggested' %><%= ' visit-row--all-day' if all_day %>"
+    id="visit_entry_<%= entry[:visit_id] %>"
+    data-visit-id="<%= entry[:visit_id] %>"
+    data-status="<%= status %>"
+    data-testid="visit-row"
+    tabindex="0"
+    role="button"
+    aria-label="<%= visit_entry_display_name(entry) %> · <%= times[:start_label] %>"
+    data-action="click->timeline-feed#selectVisit keydown.enter->timeline-feed#selectVisit keydown.space->timeline-feed#selectVisit mouseenter->timeline-feed#entryHover mouseleave->timeline-feed#entryUnhover"
+    data-entry-type="visit"
+    data-started-at="<%= entry[:started_at] %>"
+    data-ended-at="<%= entry[:ended_at] %>"
+    data-search-tokens="<%= visit_entry_search_tokens(entry) %>"
+    <% if coords %>
+      data-visit-lat="<%= coords[:lat] %>"
+      data-visit-lng="<%= coords[:lng] %>"
+      data-controller="visit-place-search"
+      data-visit-place-search-visit-id-value="<%= entry[:visit_id] %>"
+      data-visit-place-search-lat-value="<%= coords[:lat] %>"
+      data-visit-place-search-lng-value="<%= coords[:lng] %>"
+      data-visit-place-search-api-key-value="<%= current_user.api_key %>"
+    <% end %>>
+  <span class="visit-row__check">
+    <input type="checkbox"
+           data-timeline-feed-target="rowCheck"
+           data-visit-id="<%= entry[:visit_id] %>"
+           data-action="change->timeline-feed#rowCheckChanged click->timeline-feed#stopPropagation"
+           aria-label="Select visit for merge"
+           tabindex="-1">
+  </span>
+
+  <div class="visit-row__time">
+    <% if all_day %>
+      <span class="text-xs">All day</span>
+    <% else %>
+      <div class="font-mono text-xs"><%= times[:start_label] %></div>
+      <div class="font-mono text-[10px] text-base-content/50"><%= times[:end_label] %></div>
+    <% end %>
+  </div>
+
+  <div class="visit-row__rail">
+    <span class="visit-status-dot visit-status-dot--<%= status %>"></span>
+  </div>
+
+  <div class="visit-row__content">
+    <div class="visit-row__title">
+      <%# Display name with inline rename (click to edit) %>
+      <%= render 'visits/name',
+                 visit_id: entry[:visit_id],
+                 name: visit_entry_display_name(entry),
+                 suggested: status == 'suggested' %>
+    </div>
+    <div class="visit-row__meta text-xs text-base-content/60">
+      <%= format_dwell_minutes(entry[:duration]) %> · <%= entry[:point_count] %> pts
+      <% Array(entry[:tags]).each do |t| %>
+        <span class="tag-chip" style="background-color: <%= t[:color] %>;">#<%= t[:name] %></span>
+      <% end %>
+    </div>
+  </div>
+
+  <% show_actions = coords || status != 'suggested' %>
+  <% if show_actions %>
+    <div class="visit-row__actions">
+      <% if coords %>
+        <button type="button"
+                class="btn btn-xs btn-ghost btn-square"
+                title="Search for a place"
+                data-testid="visit-search-trigger"
+                data-action="click->visit-place-search#toggle click->timeline-feed#stopPropagation">
+          <%= icon 'search', class: 'w-4 h-4' %>
+        </button>
+      <% end %>
+      <% if status != 'suggested' %>
+        <%= button_to 'Delete', visit_path(entry[:visit_id]),
+                      method: :delete,
+                      data: { testid: 'visit-delete', turbo_confirm: 'Delete this visit? Your location points stay.' },
+                      class: 'btn btn-xs btn-ghost' %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if coords %>
+    <div class="visit-row__place-search" data-visit-place-search-target="mount"></div>
+  <% end %>
+
+  <%# Suggested picker spans the full row width (grid-column: 1 / -1) so it
+      doesn't squeeze into the narrow content column. %>
+  <% if status == 'suggested' %>
+    <div class="visit-row__suggested">
+      <%= render partial: 'map/timeline_feeds/suggested_picker', locals: { entry: entry } %>
+    </div>
+  <% end %>
+</li>

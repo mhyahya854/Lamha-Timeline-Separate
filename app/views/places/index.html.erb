@@ -1,0 +1,53 @@
+<% content_for :title, "Places" %>
+
+<div class="w-full my-5">
+  <div class="overflow-x-auto pb-1">
+    <div role="tablist" class="tabs tabs-lifted tabs-lg inline-flex min-w-max flex-nowrap">
+      <%= link_to 'Timeline', '/map/v2?panel=timeline&date=today&status=confirmed', role: 'tab', class: 'tab font-bold text-xl' %>
+      <%= link_to 'Places', places_path, role: 'tab', class: 'tab font-bold text-xl tab-active' %>
+    </div>
+  </div>
+
+  <div id="places" class="min-w-full">
+    <% if @places.empty? %>
+      <div class="hero min-h-80 bg-base-200">
+        <div class="hero-content text-center">
+          <div class="max-w-md">
+            <h1 class="text-5xl font-bold">Hello there!</h1>
+            <p class="py-6">
+              Here you'll find your places, created by Visits suggestion process. But now there are none.
+            </p>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <div class="flex justify-center my-5">
+        <%= paginate @places %>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Created at</th>
+              <th>Coordinates</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @places.each do |place| %>
+              <tr>
+                <td><%= place.name %></td>
+                <td><%= human_datetime(place.created_at, current_user.safe_settings.timezone) %></td>
+                <td><%= "#{place.lat}, #{place.lon}" %></td>
+                <td>
+                  <%= link_to 'Delete', place_path(place, page: params[:page]), data: { turbo_confirm: "Are you sure? Deleting a place will result in deleting all visits for this place.", turbo_method: :delete }, class: "px-4 py-2 bg-red-500 text-white rounded-md" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </div>
+</div>

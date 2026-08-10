@@ -1,0 +1,70 @@
+# frozen_string_literal: true
+
+module Calculateable
+  extend ActiveSupport::Concern
+
+  def calculate_path
+    coords = path_coordinates
+    return set_path_attributes(nil) if coords.size < 2
+
+    updated_path = Tracks::BuildPath.new(coords).call
+    set_path_attributes(updated_path)
+  end
+
+  def calculate_distance
+    calculated_distance_meters = calculate_distance_from_coordinates
+
+    self.distance = convert_distance_for_storage(calculated_distance_meters)
+  end
+
+  def recalculate_path!
+    calculate_path
+    save_if_changed!
+  end
+
+  def recalculate_distance!
+    calculate_distance
+    save_if_changed!
+  end
+
+  def recalculate_path_and_distance!
+    calculate_path
+    calculate_distance
+    recalculate_extra_metrics
+    save_if_changed!
+  end
+
+  # Hook for subclasses to recompute model-specific metrics that depend on
+  # the freshly-computed path/distance (e.g. Track's duration and avg_speed).
+  # Default is a no-op; Trip and other consumers don't need it.
+  def recalculate_extra_metrics; end
+
+  private
+
+  def path_coordinates
+    points.order(:timestamp).pluck(:lonlat)
+  end
+
+  def set_path_attributes(updated_path)
+    self.path = updated_path if respond_to?(:path=)
+    self.original_path = updated_path if respond_to?(:original_path=)
+  end
+
+  def calculate_distance_from_coordinates
+    # Always calculate in meters for consistent storage
+    Point.total_distance(points.order(:timestamp), :m)
+  end
+
+  def convert_distance_for_storage(calculated_distance_meters)
+    # Store as integer meters for consistency
+    calculated_distance_meters.round
+  end
+
+  def track_model?
+    instance_of?(Track)
+  end
+
+  def save_if_changed!
+    save! if changed?
+  end
+end

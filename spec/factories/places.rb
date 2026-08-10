@@ -1,0 +1,72 @@
+# frozen_string_literal: true
+
+FactoryBot.define do
+  factory :place do
+    sequence(:name) { |n| "Place #{n}" }
+    latitude { 54.2905245 }
+    longitude { 13.0948638 }
+    user
+
+    trait :with_geodata do
+      geodata do
+        {
+          "geometry": {
+            "coordinates": [
+              13.0948638,
+              54.2905245
+            ],
+            "type": 'Point'
+          },
+          "type": 'Feature',
+          "properties": {
+            "osm_id": 5_762_449_774,
+            "country": 'Germany',
+            "city": 'Stralsund',
+            "countrycode": 'DE',
+            "postcode": '18439',
+            "locality": 'Frankensiedlung',
+            "county": 'Vorpommern-Rügen',
+            "type": 'house',
+            "osm_type": 'N',
+            "osm_key": 'amenity',
+            "housenumber": '84-85',
+            "street": 'Greifswalder Chaussee',
+            "district": 'Franken',
+            "osm_value": 'restaurant',
+            "name": 'Braugasthaus Zum Alten Fritz',
+            "state": 'Mecklenburg-Vorpommern'
+          }
+        }
+      end
+    end
+
+    # Trait for setting coordinates from lonlat geometry
+    # This is forward-compatible for when latitude/longitude are deprecated
+    trait :from_lonlat do
+      transient do
+        lonlat_wkt { nil }
+      end
+
+      after(:build) do |place, evaluator|
+        if evaluator.lonlat_wkt
+          # Parse WKT to extract coordinates
+          # Format: "POINT(longitude latitude)" or "SRID=4326;POINT(longitude latitude)"
+          coords = evaluator.lonlat_wkt.match(/POINT\(([^ ]+) ([^ ]+)\)/)
+          if coords
+            place.longitude = coords[1].to_f
+            place.latitude = coords[2].to_f
+          end
+        end
+      end
+    end
+
+    # Special trait for testing with nil lonlat
+    trait :without_lonlat do
+      # Skip validation to create an invalid record for testing
+      to_create { |instance| instance.save(validate: false) }
+      after(:build) do |place|
+        place.lonlat = nil
+      end
+    end
+  end
+end

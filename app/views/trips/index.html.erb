@@ -1,0 +1,37 @@
+<% content_for :title, 'Trips' %>
+
+<div class="w-full my-5">
+  <div id="trips" class="min-w-full">
+    <%= render layout: 'shared/page_header', locals: { title: 'Trips' } do %>
+      <%= link_to new_trip_path, class: 'btn btn-primary btn-sm' do %>
+        <%= icon 'circle-plus', class: 'w-4 h-4' %> New trip
+      <% end %>
+    <% end %>
+
+    <% if @trips.empty? %>
+      <div class="text-center py-16 px-8 bg-base-200 rounded-xl border-2 border-dashed border-base-300">
+        <h3 class="text-xl font-bold mb-3">No trips yet</h3>
+        <p class="text-base-content/50 mb-6 max-w-sm mx-auto">
+          Create your first trip to see your journeys visualized with maps, photos, and stats.
+        </p>
+        <%= link_to new_trip_path, class: 'btn btn-primary' do %>
+          <%= icon 'circle-plus', class: 'w-4 h-4' %> Create your first trip
+        <% end %>
+      </div>
+    <% else %>
+      <div class="flex justify-center mb-4">
+        <%= paginate @trips %>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <% @trips.each do |trip| %>
+          <%= render 'trip', trip: trip %>
+        <% end %>
+      </div>
+
+      <div class="flex justify-center mt-4">
+        <%= paginate @trips %>
+      </div>
+    <% end %>
+  </div>
+</div>

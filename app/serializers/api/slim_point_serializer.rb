@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+
+class Api::SlimPointSerializer
+  def initialize(point)
+    @point = point
+  end
+
+  def call
+    {
+      id:           point.id,
+      latitude:     point.lat.to_s,
+      longitude:    point.lon.to_s,
+      timestamp:    point.timestamp,
+      velocity:     point.velocity,
+      country_name: point.country_name,
+      tracker_id:   point.tracker_id
+    }
+  end
+
+  private
+
+  attr_reader :point
+end

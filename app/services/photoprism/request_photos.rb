@@ -1,0 +1,117 @@
+# frozen_string_literal: true
+
+# This integration built based on
+# [September 15, 2024](https://github.com/photoprism/photoprism/releases/tag/240915-e1280b2fb)
+# release of Photoprism.
+
+class Photoprism::RequestPhotos
+  include SslConfigurable
+
+  attr_reader :user, :photoprism_api_base_url, :photoprism_api_key, :start_date, :end_date
+
+  def initialize(user, start_date: '1970-01-01', end_date: nil)
+    @user = user
+    @photoprism_api_base_url = "#{user.safe_settings.photoprism_url}/api/v1/photos"
+    @photoprism_api_key = user.safe_settings.photoprism_api_key
+    @start_date = start_date.presence || '1970-01-01'
+    @end_date = end_date
+  end
+
+  def call
+    raise ArgumentError, 'Photoprism URL is missing' if user.safe_settings.photoprism_url.blank?
+    raise ArgumentError, 'Photoprism API key is missing' if photoprism_api_key.blank?
+
+    data = retrieve_photoprism_data
+
+    return [] if data.blank? || data[0]['error'].present?
+
+    time_framed_data(data, start_date, end_date)
+  end
+
+  private
+
+  def retrieve_photoprism_data
+    data = []
+    offset = 0
+
+    while offset < 1_000_000
+      response_data = fetch_page(offset)
+
+      # Break on nil (fetch failed), empty array, or error response
+      break if response_data.nil?
+      break if response_data.blank? || (response_data.is_a?(Hash) && response_data.try(:[], 'error').present?)
+
+      data << response_data
+
+      offset += 1000
+    end
+
+    data.flatten
+  rescue HTTParty::Error, Net::OpenTimeout, Net::ReadTimeout, JSON::ParserError => e
+    Rails.logger.error("Photoprism photo fetch failed: #{e.message}")
+    []
+  end
+
+  def fetch_page(offset)
+    response = HTTParty.get(
+      photoprism_api_base_url,
+      http_options_with_ssl(
+        @user, :photoprism, {
+          headers: headers,
+          query: request_params(offset),
+          timeout: 10
+        }
+      )
+    )
+
+    result = Photoprism::ResponseValidator.validate_and_parse(response)
+
+    unless result[:success]
+      Rails.logger.error("Photoprism photo fetch failed: #{result[:error]}")
+      Rails.logger.debug("Photoprism API request params: #{request_params(offset).inspect}")
+      return nil
+    end
+
+    cache_preview_token(response.headers)
+
+    result[:data]
+  end
+
+  def headers
+    {
+      'Authorization' => "Bearer #{photoprism_api_key}",
+      'accept' => 'application/json',
+      'Content-Type' => 'application/json'
+    }
+  end
+
+  def request_params(offset = 0)
+    params = offset.zero? ? default_params : default_params.merge(offset: offset)
+    params[:before] = (end_date.to_date + 1.day).iso8601 if end_date.present?
+    params
+  end
+
+  def default_params
+    {
+      q: '',
+      public: true,
+      quality: 3,
+      after: start_date.to_date.iso8601,
+      count: 1000
+    }
+  end
+
+  def time_framed_data(data, start_date, end_date)
+    range_start = start_date.to_datetime
+    range_end = (end_date || Time.current).to_datetime
+    data.flatten.select do |photo|
+      DateTime.parse(photo['TakenAtLocal']).between?(range_start, range_end)
+    end
+  end
+
+  def cache_preview_token(headers)
+    preview_token = headers['X-Preview-Token']
+
+    Photoprism::CachePreviewToken.new(user, preview_token).call
+  end
+end

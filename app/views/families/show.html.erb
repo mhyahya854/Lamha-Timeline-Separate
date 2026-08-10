@@ -1,0 +1,228 @@
+<% content_for :title, @family.name %>
+
+<div class="w-full my-5">
+  <%# Header %>
+  <%= render layout: 'shared/page_header', locals: { title: @family.name } do %>
+    <div class="flex items-center gap-2">
+      <% if policy(@family).update? %>
+        <%= link_to edit_family_path, class: "btn btn-outline btn-sm" do %>
+          <%= icon 'square-pen', class: 'w-4 h-4' %> Edit
+        <% end %>
+      <% end %>
+      <% if policy(@family).invite? && @family.can_add_members? %>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('invite-section').scrollIntoView({behavior:'smooth'})">
+          <%= icon 'circle-plus', class: 'w-4 h-4' %> Invite
+        </button>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="text-sm text-base-content/50 -mt-4 mb-6">
+    <%= @member_count %> members &middot; Created <%= @family.created_at.strftime('%B %Y') %>
+  </div>
+
+  <%# Main layout: Map + Sidebar %>
+  <div class="flex flex-col lg:flex-row gap-4" style="min-height: 500px;"
+       data-controller="family-map"
+       data-family-map-locations-value="<%= @member_locations.to_json %>">
+
+    <%# Left: Map %>
+    <div class="w-full lg:w-3/5 min-h-full">
+      <div class="border border-base-300 rounded-xl overflow-hidden h-full relative"
+           data-family-map-target="map">
+        <% if @member_locations.empty? %>
+          <div class="absolute inset-0 flex items-center justify-center bg-base-200 z-10">
+            <div class="text-center">
+              <div class="text-base-content/30 mb-2">
+                <%= icon 'map', class: 'w-12 h-12 mx-auto' %>
+              </div>
+              <p class="text-base-content/50 text-sm">No family members are sharing their location</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <%# Right: Sidebar %>
+    <div class="w-full lg:w-2/5 flex flex-col gap-4">
+
+      <%# Your sharing controls %>
+      <div class="border border-base-300 rounded-xl overflow-hidden">
+        <div class="bg-base-200 px-4 py-2.5">
+          <h3 class="text-xs font-medium uppercase tracking-wider text-base-content/50">Your Sharing</h3>
+        </div>
+        <div class="p-4">
+          <%= render 'families/location_sharing_toggle', member: current_user %>
+        </div>
+      </div>
+
+      <%# Members list %>
+      <div class="border border-base-300 rounded-xl overflow-hidden">
+        <div class="bg-base-200 px-4 py-2.5">
+          <h3 class="text-xs font-medium uppercase tracking-wider text-base-content/50">
+            Members <span class="text-base-content/30">(<%= @members.count %>)</span>
+          </h3>
+        </div>
+        <div class="divide-y divide-base-200">
+          <% @members.each do |member| %>
+            <% location = @member_locations.find { |l| l[:user_id] == member.id } %>
+            <div class="px-4 py-3 hover:bg-base-200/50 transition-colors
+                        <%= 'cursor-pointer' if location %>"
+                 <% if location %>
+                   data-action="click->family-map#flyToMember"
+                   data-lon="<%= location[:longitude] %>"
+                   data-lat="<%= location[:latitude] %>"
+                 <% end %>>
+              <div class="flex items-center gap-3">
+                <%# Avatar %>
+                <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold
+                     <%= member == current_user ? 'bg-primary text-primary-content' : 'bg-base-200 text-base-content/60' %>">
+                  <%= member.email&.first&.upcase || '?' %>
+                </div>
+
+                <%# Info %>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium truncate"><%= member.email %></span>
+                    <% if member.family_membership.role == 'owner' %>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-warning/10 text-warning">Owner</span>
+                    <% end %>
+                    <% if member == current_user %>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">You</span>
+                    <% end %>
+                  </div>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <% if member.family_sharing_enabled? %>
+                      <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                      <span class="text-xs text-success">
+                        Sharing <%= member.family_sharing_duration == 'permanent' ? 'always' : "for #{member.family_sharing_duration}" %>
+                      </span>
+                      <% if location %>
+                        <span class="text-xs text-base-content/40">
+                          &middot; <%= time_ago_in_words(Time.zone.at(location[:timestamp])) %> ago
+                        </span>
+                      <% end %>
+                    <% else %>
+                      <div class="w-2 h-2 bg-base-300 rounded-full"></div>
+                      <span class="text-xs text-base-content/40">Not sharing</span>
+                      <% if member != current_user %>
+                        <% pending_req = @pending_requests[member.id] %>
+                        <% if pending_req %>
+                          <span class="text-xs text-info">Requested</span>
+                        <% else %>
+                          <%= button_to "Request",
+                              family_location_requests_path(target_user_id: member.id),
+                              method: :post,
+                              class: "btn btn-outline btn-xs btn-info ml-auto" %>
+                        <% end %>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+                <% if current_user.family_owner? && member != current_user && !member.family_membership.owner? %>
+                  <%= link_to family_member_path(member.family_membership),
+                        method: :delete,
+                        data: {
+                          turbo_confirm: "Remove #{member.email} from the family?",
+                          turbo_method: :delete
+                        },
+                        class: "btn btn-ghost btn-xs text-error ml-auto" do %>
+                    <%= icon 'x', class: 'w-3.5 h-3.5' %> Remove
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Invitations %>
+      <div class="border border-base-300 rounded-xl overflow-hidden" id="invite-section">
+        <div class="bg-base-200 px-4 py-2.5">
+          <h3 class="text-xs font-medium uppercase tracking-wider text-base-content/50">
+            Invitations <span class="text-base-content/30">(<%= @pending_invitations.count %>)</span>
+          </h3>
+        </div>
+
+        <% if @pending_invitations.any? %>
+          <div class="divide-y divide-base-200">
+            <% @pending_invitations.each do |invitation| %>
+              <div class="px-4 py-3">
+                <div class="flex items-center justify-between">
+                  <div class="min-w-0 flex-1 mr-2">
+                    <div class="text-sm font-medium"><%= invitation.email %></div>
+                    <div class="text-xs text-base-content/40">
+                      Invited <%= time_ago_in_words(invitation.created_at) %> ago
+                      &middot; expires <%= invitation.expires_at.strftime('%b %d') %>
+                    </div>
+                    <div class="text-xs text-base-content/50 font-mono break-all select-all mt-1">
+                      <%= public_invitation_url(invitation.token) %>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <button data-controller="clipboard"
+                            data-clipboard-text-value="<%= public_invitation_url(invitation.token) %>"
+                            data-action="click->clipboard#copy"
+                            class="btn btn-ghost btn-xs">
+                      <%= icon 'copy', class: 'w-3.5 h-3.5' %>
+                    </button>
+                    <% if policy(@family).manage_invitations? %>
+                      <%= button_to family_invitation_path(invitation.token),
+                            method: :delete,
+                            form: { data: { turbo_confirm: 'Cancel this invitation?', turbo_method: :delete } },
+                            class: "btn btn-ghost btn-xs text-error hover:bg-error/10" do %>
+                        <%= icon 'x', class: 'w-3.5 h-3.5' %>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <%# Invite form %>
+        <% if policy(@family).invite? && @family.can_add_members? %>
+          <div class="px-4 py-3 border-t border-base-200">
+            <%= form_with model: [@family, Family::Invitation.new], url: family_invitations_path(@family), local: true do |form| %>
+              <div class="flex gap-2">
+                <%= form.email_field :email,
+                      placeholder: 'Email address',
+                      class: "input input-bordered input-sm flex-1" %>
+                <%= form.submit 'Invite',
+                      class: "btn btn-primary btn-sm" %>
+              </div>
+            <% end %>
+          </div>
+        <% elsif policy(@family).invite? %>
+          <div class="px-4 py-3 border-t border-base-200">
+            <p class="text-xs text-warning">
+              <%= icon 'triangle-alert', class: 'w-3.5 h-3.5 inline' %>
+              Family at capacity (<%= @family.class::MAX_MEMBERS %> members max)
+            </p>
+          </div>
+        <% end %>
+      </div>
+
+      <%# Danger zone %>
+      <div class="flex gap-2 justify-end">
+        <% if !current_user.family_owner? && current_user.family_membership %>
+          <%= link_to family_member_path(current_user.family_membership),
+                method: :delete,
+                data: { turbo_confirm: 'Are you sure you want to leave this family?', turbo_method: :delete },
+                class: "btn btn-ghost btn-xs text-warning" do %>
+            Leave Family
+          <% end %>
+        <% end %>
+        <% if policy(@family).destroy? %>
+          <%= link_to family_path,
+                method: :delete,
+                data: { turbo_confirm: 'Delete this family? This cannot be undone.', turbo_method: :delete },
+                class: "btn btn-ghost btn-xs text-error" do %>
+            <%= icon 'trash-2', class: 'w-3.5 h-3.5' %> Delete Family
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

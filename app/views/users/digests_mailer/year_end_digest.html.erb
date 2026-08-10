@@ -1,0 +1,68 @@
+<% pre_style = 'white-space: pre; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; line-height: 1.25; font-size: 13px; background: #fff; padding: 16px; border-radius: 6px; border: 1px solid #e5e5e5; overflow-x: auto; margin: 0 0 1em 0;' %>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           max-width: 600px; margin: 0 auto; padding: 20px;
+           color: #1a1a1a; background: #fafafa; }
+    pre.ascii { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+                line-height: 1.25; font-size: 13px; white-space: pre;
+                background: #fff; padding: 16px; border-radius: 6px;
+                border: 1px solid #e5e5e5; overflow-x: auto; }
+    h1, h2 { color: #1a1a1a; }
+    .meta { color: #666; font-size: 14px; }
+    .footer { color: #888; font-size: 12px; margin-top: 32px;
+              border-top: 1px solid #e5e5e5; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Your <%= @digest.year %> Year in Review</h1>
+  <p class="meta">Here's your <%= @digest.year %> at a glance.</p>
+
+  <h2>THE NUMBERS</h2>
+  <pre class="ascii" style="<%= pre_style %>">
+Distance       <%= distance_with_unit(@digest.distance, @distance_unit) %>
+Countries      <%= @digest.all_time_stats.to_h['total_countries'] %>
+Cities         <%= @digest.all_time_stats.to_h['total_cities'] %>
+</pre>
+
+  <% if @daily_values.any? %>
+    <h2>ACTIVITY HEATMAP</h2>
+    <pre class="ascii" style="<%= pre_style %>"><%= ascii_year_heatmap(@daily_values, start_date: Date.new(@digest.year, 1, 1)) %>
+
+· none   ░ light   ▒ moderate   ▓ high   █ peak</pre>
+  <% end %>
+
+  <h2>MONTHLY DISTANCE</h2>
+  <pre class="ascii" style="<%= pre_style %>"><%= ascii_hbar(
+      (1..12).map { |m| @monthly_distances[m.to_s].to_f.round },
+      labels: Date::ABBR_MONTHNAMES[1..12],
+      width: 24,
+      suffix: " #{@distance_unit}"
+    ) %></pre>
+
+  <% if @top_countries.any? %>
+    <h2>TOP COUNTRIES</h2>
+    <pre class="ascii" style="<%= pre_style %>"><%= ascii_ranked_list(@top_countries.first(5), value_key: 'minutes', label_key: 'name', width: 20, format: ->(m) { "#{(m.to_f / 60).round}h" }) %></pre>
+  <% end %>
+
+  <% if @digest.year_over_year.to_h['distance_change_percent'].present? %>
+    <h2>VS PREVIOUS YEAR</h2>
+    <pre class="ascii" style="<%= pre_style %>">Distance  <%= ascii_trend_from_pct(@digest.distance, @digest.year_over_year['distance_change_percent']) %>
+</pre>
+  <% end %>
+
+  <p><a href="<%= insights_url %>">View full insights &rarr;</a></p>
+
+  <% if @digest.sharing_uuid.present? %>
+    <p><a href="<%= shared_users_digest_url(uuid: @digest.sharing_uuid) %>">Share your year &rarr;</a></p>
+  <% end %>
+
+  <div class="footer">
+    You're receiving this because yearly digest emails are on for your account.
+    <a href="<%= settings_general_index_url(anchor: 'email-digests') %>">Manage email preferences</a>.
+  </div>
+</body>
+</html>

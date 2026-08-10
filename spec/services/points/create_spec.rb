@@ -1,0 +1,501 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe Points::Create do
+  describe '#call' do
+    let(:user) { create(:user) }
+    let(:timestamp) { Time.current }
+    let(:params_service) { instance_double(Points::Params) }
+
+    let(:point_params) do
+      {
+        locations: [
+          { lat: 51.5074, lon: -0.1278, timestamp: timestamp.iso8601 },
+          { lat: 40.7128, lon: -74.0060, timestamp: (timestamp + 1.hour).iso8601 }
+        ]
+      }
+    end
+
+    let(:processed_data) do
+      [
+        {
+          lonlat: 'POINT(-0.1278 51.5074)',
+          timestamp: timestamp,
+          user_id: user.id,
+          created_at: Time.current,
+          updated_at: Time.current
+        },
+        {
+          lonlat: 'POINT(-74.006 40.7128)',
+          timestamp: timestamp + 1.hour,
+          user_id: user.id,
+          created_at: Time.current,
+          updated_at: Time.current
+        }
+      ]
+    end
+
+    let(:upsert_result) do
+      [
+        Point.new(id: 1, lonlat: 'POINT(-0.1278 51.5074)', timestamp: timestamp),
+        Point.new(id: 2, lonlat: 'POINT(-74.006 40.7128)', timestamp: timestamp + 1.hour)
+      ]
+    end
+
+    describe 'basic point creation' do
+      before do
+        allow(Points::Params).to receive(:new).with(point_params, user.id).and_return(params_service)
+        allow(params_service).to receive(:call).and_return(processed_data)
+      end
+
+      it 'initializes the params service with correct arguments' do
+        expect(Points::Params).to receive(:new).with(point_params, user.id)
+        described_class.new(user, point_params).call
+      end
+
+      it 'calls the params service' do
+        expect(params_service).to receive(:call)
+        described_class.new(user, point_params).call
+      end
+
+      it 'upserts the processed data' do
+        expect(Point).to receive(:archival_safe_upsert_all)
+          .with(
+            processed_data,
+            returning: Arel.sql(
+              'id, xmax, timestamp, ST_X(lonlat::geometry) AS longitude, ST_Y(lonlat::geometry) AS latitude'
+            )
+          )
+          .and_return(upsert_result)
+
+        described_class.new(user, point_params).call
+      end
+
+      it 'returns the upsert result' do
+        allow(Point).to receive(:archival_safe_upsert_all).and_return(upsert_result)
+        result = described_class.new(user, point_params).call
+        expect(result).to eq(upsert_result)
+      end
+    end
+
+    context 'with duplicate points' do
+      let(:duplicate_point_params) do
+        {
+          locations: [
+            { lat: 51.5074, lon: -0.1278, timestamp: timestamp.iso8601 },
+            { lat: 51.5074, lon: -0.1278, timestamp: timestamp.iso8601 }, # Duplicate
+            { lat: 40.7128, lon: -74.0060, timestamp: (timestamp + 1.hour).iso8601 }
+          ]
+        }
+      end
+
+      let(:duplicate_processed_data) do
+        current_time = Time.current
+        [
+          {
+            lonlat: 'POINT(-0.1278 51.5074)',
+            timestamp: timestamp,
+            user_id: user.id,
+            created_at: current_time,
+            updated_at: current_time
+          },
+          {
+            lonlat: 'POINT(-0.1278 51.5074)', # Duplicate
+            timestamp: timestamp,
+            user_id: user.id,
+            created_at: current_time,
+            updated_at: current_time
+          },
+          {
+            lonlat: 'POINT(-74.006 40.7128)',
+            timestamp: timestamp + 1.hour,
+            user_id: user.id,
+            created_at: current_time,
+            updated_at: current_time
+          }
+        ]
+      end
+
+      let(:deduplicated_upsert_result) do
+        [
+          Point.new(id: 1, lonlat: 'POINT(-0.1278 51.5074)', timestamp: timestamp),
+          Point.new(id: 2, lonlat: 'POINT(-74.006 40.7128)', timestamp: timestamp + 1.hour)
+        ]
+      end
+
+      before do
+        allow_any_instance_of(Points::Params).to receive(:call).and_return(duplicate_processed_data)
+      end
+
+      describe 'deduplication behavior' do
+        it 'reduces the number of points to unique combinations' do
+          expect(Point).to receive(:upsert_all) do |data, _options|
+            expect(data.size).to eq(2)
+            deduplicated_upsert_result
+          end
+
+          described_class.new(user, duplicate_point_params).call
+        end
+
+        it 'preserves the correct lonlat values' do
+          expect(Point).to receive(:upsert_all) do |data, _options|
+            expect(data.map { |d| d[:lonlat] }).to match_array(['POINT(-0.1278 51.5074)', 'POINT(-74.006 40.7128)'])
+            deduplicated_upsert_result
+          end
+
+          described_class.new(user, duplicate_point_params).call
+        end
+
+        it 'preserves the correct timestamps' do
+          expect(Point).to receive(:upsert_all) do |data, _options|
+            expect(data.map { |d| d[:timestamp] }).to match_array([timestamp, timestamp + 1.hour])
+            deduplicated_upsert_result
+          end
+
+          described_class.new(user, duplicate_point_params).call
+        end
+
+        it 'maintains the correct user_id for all points' do
+          expect(Point).to receive(:upsert_all) do |data, _options|
+            expect(data.map { |d| d[:user_id] }).to all(eq(user.id))
+            deduplicated_upsert_result
+          end
+
+          described_class.new(user, duplicate_point_params).call
+        end
+
+        it 'uses the correct unique constraint' do
+          expect(Point).to receive(:upsert_all) do |_data, options|
+            expect(options[:unique_by]).to eq(%i[lonlat timestamp user_id])
+            deduplicated_upsert_result
+          end
+
+          described_class.new(user, duplicate_point_params).call
+        end
+
+        it 'uses the correct returning clause' do
+          expect(Point).to receive(:upsert_all) do |_data, options|
+            expect(options[:returning]).to eq(
+              Arel.sql('id, xmax, timestamp, ST_X(lonlat::geometry) AS longitude, ST_Y(lonlat::geometry) AS latitude')
+            )
+            deduplicated_upsert_result
+          end
+
+          described_class.new(user, duplicate_point_params).call
+        end
+      end
+
+      describe 'database interaction' do
+        it 'creates only unique points' do
+          expect do
+            described_class.new(user, duplicate_point_params).call
+          end.to change(Point, :count).by(2)
+        end
+
+        it 'creates points with correct coordinates' do
+          described_class.new(user, duplicate_point_params).call
+          points = Point.order(:timestamp).last(2)
+
+          expect(points[0].lonlat.x).to be_within(0.0001).of(-0.1278)
+          expect(points[0].lonlat.y).to be_within(0.0001).of(51.5074)
+          expect(points[1].lonlat.x).to be_within(0.0001).of(-74.006)
+          expect(points[1].lonlat.y).to be_within(0.0001).of(40.7128)
+        end
+      end
+    end
+
+    context 'with lonlat strings that collapse to the same geography' do
+      # Regression: clients (e.g. Overland on iOS) occasionally emit the same
+      # location in two different WKT-string forms inside a single batch. Ruby
+      # string equality would keep both, but the PostgreSQL UNIQUE index on
+      # (lonlat, timestamp, user_id) treats them as equal — so `upsert_all`
+      # fails with PG::CardinalityViolation and the whole 1000-point slice is
+      # lost.
+      let(:collapsed_processed_data) do
+        current_time = Time.current
+        [
+          {
+            lonlat: 'POINT(-0.1278 51.5074)',
+            timestamp: timestamp,
+            user_id: user.id,
+            created_at: current_time,
+            updated_at: current_time
+          },
+          {
+            lonlat: 'POINT(-0.12780000 51.50740000)', # different string, same point
+            timestamp: timestamp,
+            user_id: user.id,
+            created_at: current_time,
+            updated_at: current_time
+          }
+        ]
+      end
+
+      before do
+        allow_any_instance_of(Points::Params).to receive(:call).and_return(collapsed_processed_data)
+      end
+
+      it 'deduplicates them before upsert_all (prevents PG::CardinalityViolation)' do
+        expect do
+          described_class.new(user, point_params).call
+        end.to change { Point.where(user: user, timestamp: timestamp.to_i).count }.from(0).to(1)
+      end
+    end
+
+    context 'with large datasets' do
+      let(:many_locations) do
+        2001.times.map do |i|
+          { lat: 51.5074 + (i * 0.001), lon: -0.1278 - (i * 0.001), timestamp: (timestamp + i.minutes).iso8601 }
+        end
+      end
+
+      let(:large_params) { { locations: many_locations } }
+
+      let(:large_processed_data) do
+        many_locations.map.with_index do |loc, i|
+          {
+            lonlat: "POINT(#{loc[:lon]} #{loc[:lat]})",
+            timestamp: timestamp + i.minutes,
+            user_id: user.id,
+            created_at: Time.current,
+            updated_at: Time.current
+          }
+        end
+      end
+
+      let(:first_batch_result) { 1000.times.map { |i| Point.new(id: i + 1, lonlat: anything, timestamp: anything) } }
+      let(:second_batch_result) do
+        1000.times.map do |i|
+          Point.new(id: i + 1001, lonlat: anything, timestamp: anything)
+        end
+      end
+      let(:third_batch_result) { [Point.new(id: 2001, lonlat: anything, timestamp: anything)] }
+      let(:combined_results) { first_batch_result + second_batch_result + third_batch_result }
+
+      before do
+        allow(Points::Params).to receive(:new).with(large_params, user.id).and_return(params_service)
+        allow(params_service).to receive(:call).and_return(large_processed_data)
+        allow(Point).to receive(:upsert_all).exactly(3).times.and_return(first_batch_result, second_batch_result,
+                                                                         third_batch_result)
+      end
+
+      it 'handles batching for large datasets' do
+        result = described_class.new(user, large_params).call
+
+        expect(result.size).to eq(2001)
+        expect(result).to eq(combined_results)
+      end
+    end
+
+    context 'with real data insertion' do
+      let(:actual_processed_data) do
+        [
+          {
+            lonlat: 'POINT(-0.1278 51.5074)',
+            timestamp: timestamp,
+            user_id: user.id,
+            created_at: Time.current,
+            updated_at: Time.current
+          },
+          {
+            lonlat: 'POINT(-74.006 40.7128)',
+            timestamp: timestamp + 1.hour,
+            user_id: user.id,
+            created_at: Time.current,
+            updated_at: Time.current
+          }
+        ]
+      end
+
+      before do
+        allow_any_instance_of(Points::Params).to receive(:call).and_return(actual_processed_data)
+      end
+
+      it 'creates points in the database' do
+        expect do
+          described_class.new(user, point_params).call
+        end.to change(Point, :count).by(2)
+
+        points = Point.order(:timestamp).last(2)
+        expect(points[0].lonlat.x).to be_within(0.0001).of(-0.1278)
+        expect(points[0].lonlat.y).to be_within(0.0001).of(51.5074)
+
+        point_time = points[0].timestamp.is_a?(Integer) ? Time.zone.at(points[0].timestamp) : points[0].timestamp
+        expect(point_time).to be_within(1.second).of(timestamp)
+
+        expect(points[1].lonlat.x).to be_within(0.0001).of(-74.006)
+        expect(points[1].lonlat.y).to be_within(0.0001).of(40.7128)
+
+        point_time = points[1].timestamp.is_a?(Integer) ? Time.zone.at(points[1].timestamp) : points[1].timestamp
+        expect(point_time).to be_within(1.second).of(timestamp + 1.hour)
+      end
+
+      it 'increments points_count to match actual point count' do
+        described_class.new(user, point_params).call
+        user.reload
+
+        expect(user.points_count).to eq(Point.where(user_id: user.id).count)
+      end
+
+      it 'enqueues VisitSuggestingJob when reverse geocoding is enabled (regression for #1749)' do
+        allow(DawarichSettings).to receive(:reverse_geocoding_enabled?).and_return(true)
+
+        expect do
+          described_class.new(user, point_params).call
+        end.to have_enqueued_job(VisitSuggestingJob).with(hash_including(user_id: user.id))
+      end
+
+      it 'does not enqueue VisitSuggestingJob when reverse geocoding is disabled' do
+        allow(DawarichSettings).to receive(:reverse_geocoding_enabled?).and_return(false)
+
+        expect do
+          described_class.new(user, point_params).call
+        end.not_to have_enqueued_job(VisitSuggestingJob)
+      end
+
+      it 'does not increment points_count for duplicate upserts' do
+        described_class.new(user, point_params).call
+        user.reload
+        count_after_first = user.points_count
+
+        described_class.new(user, point_params).call
+        user.reload
+
+        expect(user.points_count).to eq(count_after_first)
+      end
+    end
+
+    context 'with GeoJSON example data' do
+      let(:geojson_file) { file_fixture('points/geojson_example.json') }
+      let(:geojson_data) { JSON.parse(File.read(geojson_file)) }
+
+      let(:expected_processed_data) do
+        [
+          {
+            lonlat: 'POINT(-122.40530871 37.744304130000003)',
+            timestamp: Time.parse('2025-01-17T21:03:01Z'),
+            user_id: user.id,
+            created_at: Time.current,
+            updated_at: Time.current
+          },
+          {
+            lonlat: 'POINT(-122.40518926999999 37.744513759999997)',
+            timestamp: Time.parse('2025-01-17T21:03:02Z'),
+            user_id: user.id,
+            created_at: Time.current,
+            updated_at: Time.current
+          }
+        ]
+      end
+
+      let(:all_processed_data) do
+        6.times.map do |i|
+          if i < 2
+            expected_processed_data[i]
+          else
+            {
+              lonlat: 'POINT(-122.0 37.0)',
+              timestamp: Time.parse('2025-01-17T21:03:03Z') + i.minutes,
+              user_id: user.id,
+              created_at: Time.current,
+              updated_at: Time.current
+            }
+          end
+        end
+      end
+
+      let(:expected_results) do
+        all_processed_data.map.with_index do |data, i|
+          expected_time = data[:timestamp].to_i
+          Point.new(
+            id: i + 1,
+            lonlat: data[:lonlat],
+            timestamp: expected_time
+          )
+        end
+      end
+
+      before do
+        allow(Points::Params).to receive(:new).with(geojson_data, user.id).and_return(params_service)
+        allow(params_service).to receive(:call).and_return(all_processed_data)
+        allow(Point).to receive(:archival_safe_upsert_all)
+          .with(
+            all_processed_data,
+            returning: Arel.sql(
+              'id, xmax, timestamp, ST_X(lonlat::geometry) AS longitude, ST_Y(lonlat::geometry) AS latitude'
+            )
+          )
+          .and_return(expected_results)
+      end
+
+      it 'correctly processes real GeoJSON example data' do
+        result = described_class.new(user, geojson_data).call
+
+        expect(result.size).to eq(6)
+        expect(result).to eq(expected_results)
+
+        # Compare the x and y coordinates instead of the full point object
+        expect(result[0].lonlat.x).to be_within(0.0001).of(-122.40530871)
+        expect(result[0].lonlat.y).to be_within(0.0001).of(37.744304130000003)
+
+        # Convert timestamp back to Time for comparison
+        time_obj = Time.zone.at(result[0].timestamp)
+        expected_time = Time.parse('2025-01-17T21:03:01Z')
+        expect(time_obj).to be_within(1.second).of(expected_time)
+
+        expect(result[1].lonlat.x).to be_within(0.0001).of(-122.40518926999999)
+        expect(result[1].lonlat.y).to be_within(0.0001).of(37.744513759999997)
+
+        # Convert timestamp back to Time for comparison
+        time_obj = Time.zone.at(result[1].timestamp)
+        expected_time = Time.parse('2025-01-17T21:03:02Z')
+        expect(time_obj).to be_within(1.second).of(expected_time)
+      end
+    end
+
+    describe 'out-of-range course_accuracy from a near-stationary iOS fix' do
+      let(:user) { create(:user) }
+      let(:batch_params) do
+        {
+          locations: [
+            {
+              type: 'Feature',
+              geometry: { type: 'Point', coordinates: [7.300162333022016, 51.40863363359207] },
+              properties: {
+                timestamp: '2026-01-04T14:32:36.999Z',
+                speed: 0.01308945239267841,
+                course: 4.801180790801141,
+                course_accuracy: 1731.726995484005
+              }
+            },
+            {
+              type: 'Feature',
+              geometry: { type: 'Point', coordinates: [7.299433856659638, 51.40862237973182] },
+              properties: {
+                timestamp: '2026-01-04T14:36:40.999Z',
+                speed: 1.003747182282529,
+                course: 266.37909882602,
+                course_accuracy: 32.15991578317691
+              }
+            }
+          ]
+        }
+      end
+
+      it 'persists the whole batch instead of failing on the overflowing point' do
+        expect { described_class.new(user, batch_params).call }
+          .to change(user.points, :count).by(2)
+      end
+
+      it 'drops the overflowing course_accuracy and keeps the valid one' do
+        described_class.new(user, batch_params).call
+
+        accuracies = user.points.order(:timestamp).pluck(:course_accuracy)
+
+        expect(accuracies.first).to be_nil
+        expect(accuracies.last).to be_within(0.00001).of(32.15992)
+      end
+    end
+  end
+end

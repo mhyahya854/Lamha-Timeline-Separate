@@ -1,0 +1,27 @@
+default: &default
+  adapter: postgis
+  encoding: unicode
+  database: <%= ENV['DATABASE_NAME'] %>
+  username: <%= ENV['DATABASE_USERNAME'] %>
+  password: <%= ENV['DATABASE_PASSWORD'] %>
+  port: <%= ENV['DATABASE_PORT'] || '5432' %>
+  host: <%= ENV['DATABASE_HOST'] %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 10 } %>
+  timeout: 5000
+  advisory_locks: <%= ENV.fetch('DATABASE_ADVISORY_LOCKS', 'true') %>
+
+development:
+  <<: *default
+  database: <%= ENV['DATABASE_NAME'] || 'dawarich_development' %>
+
+test:
+  <<: *default
+  database: <%= ENV['DATABASE_NAME'] || 'dawarich_test' %>
+
+production:
+  <<: *default
+  database: <%= ENV['DATABASE_NAME'] || 'dawarich_production' %>
+
+staging:
+  <<: *default
+  database: <%= ENV['DATABASE_NAME'] || 'dawarich_production' %>

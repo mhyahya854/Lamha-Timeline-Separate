@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if ! command -v foreman &> /dev/null
+then
+  echo "Installing foreman..."
+  gem install foreman
+fi
+
+if [ "$PROMETHEUS_EXPORTER_ENABLED" = "true" ]; then
+  echo "Starting Foreman with Procfile.prometheus.dev..."
+  foreman start -f Procfile.prometheus.dev
+else
+  echo "Starting Foreman with Procfile.dev..."
+  foreman start -f Procfile.dev
+fi

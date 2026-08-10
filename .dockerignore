@@ -1,0 +1,25 @@
+/log
+/tmp
+
+# We need directories for import and export files, but not the files themselves.
+/public/exports/*
+!/public/exports/.keep
+/public/imports/*
+!/public/imports/.keep
+
+.git/
+.github/
+docs/
+.circleci/
+.devcontainer/
+screenshots/
+.ruby-lsp/
+
+# Node deps are installed inside the image (npm ci), never from the host
+node_modules/
+
+# Poster renderer deps are installed inside the image (platform binaries)
+vendor/poster_renderer/node_modules/
+
+# Local git worktrees must never end up inside the image
+.worktrees/

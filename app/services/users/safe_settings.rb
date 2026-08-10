@@ -1,0 +1,387 @@
+# frozen_string_literal: true
+
+class Users::SafeSettings
+  attr_reader :settings
+
+  GATED_MAP_LAYERS = ['Heatmap', 'Fog of War', 'Scratch map'].freeze
+
+  FOG_OF_WAR_MODES = %w[points hexagons].freeze
+
+  DEFAULT_VALUES = {
+    'fog_of_war_meters' => 50,
+    'fog_of_war_threshold' => 50,
+    'fog_of_war_mode' => 'points',
+    'meters_between_routes' => 500,
+    'preferred_map_layer' => 'OpenStreetMap',
+    'speed_colored_routes' => false,
+    'points_rendering_mode' => 'raw',
+    'minutes_between_routes' => 30,
+    'time_threshold_minutes' => 30,
+    'merge_threshold_minutes' => 15,
+    'live_map_enabled' => true,
+    'route_opacity' => 0.6,
+    # Layer colors: route fallback matches Map v1's blue, track color matches
+    # Tracks::GeojsonSerializer::DEFAULT_COLOR — keep them in sync.
+    'route_color' => '#0000ff',
+    'track_color' => '#6366F1',
+    'immich_url' => nil,
+    'immich_api_key' => nil,
+    'immich_skip_ssl_verification' => false,
+    'photoprism_url' => nil,
+    'photoprism_api_key' => nil,
+    'photoprism_skip_ssl_verification' => false,
+    'airtrail_url' => nil,
+    'airtrail_api_key' => nil,
+    'airtrail_skip_ssl_verification' => false,
+    'airtrail_last_synced_at' => nil,
+    'maps' => { 'distance_unit' => 'km' },
+    'visits_suggestions_enabled' => 'true',
+    'enabled_map_layers' => %w[Tracks Heatmap],
+    'maps_maplibre_style' => 'light',
+    'maps_maplibre_tiles_url' => nil,
+    'maps_maplibre_custom_theme' => {
+      'base' => 'noir',
+      'tokens' => {
+        'bg' => '#000000', 'water' => '#0A0A0A', 'parks' => '#111111',
+        'buildings' => '#141414', 'railway' => '#808080', 'boundaries' => '#4D4D4D',
+        'road_motorway' => '#FFFFFF', 'road_primary' => '#E0E0E0',
+        'road_secondary' => '#B0B0B0', 'road_tertiary' => '#808080',
+        'road_residential' => '#505050', 'road_default' => '#808080'
+      }
+    },
+    'news_emails_enabled' => true,
+    'globe_projection' => true,
+    'supporter_email' => nil,
+    'supporter_github_username' => nil,
+    'show_supporter_badge' => true,
+    # Transportation mode thresholds (speeds in km/h, distances in km)
+    'transportation_thresholds' => {
+      'walking_max_speed' => 7,
+      'cycling_max_speed' => 45,
+      'driving_max_speed' => 220,
+      'flying_min_speed' => 150
+    },
+    'transportation_expert_thresholds' => {
+      'stationary_max_speed' => 1,
+      'running_vs_cycling_accel' => 0.25,
+      'cycling_vs_driving_accel' => 0.4,
+      'train_min_speed' => 80,
+      'min_segment_duration' => 60,
+      'time_gap_threshold' => 180,
+      'min_flight_distance_km' => 100
+    },
+    'transportation_expert_mode' => false,
+    'min_minutes_spent_in_city' => 60,
+    'max_gap_minutes_in_city' => 120,
+    # GPS noise filtering (Points::AnomalyFilter)
+    'gps_filtering_enabled' => true,
+    'timezone' => ENV.fetch('TIME_ZONE', 'UTC'),
+    'visit_radius_meters' => 100,
+    'visit_min_points' => 3,
+    'visit_min_duration_minutes' => 5,
+    'visit_density_fill_enabled' => true,
+    'stay_max_gap_minutes' => 60,
+    'point_dragging_enabled' => false
+  }.freeze
+
+  def initialize(settings = {}, plan: nil)
+    @settings = DEFAULT_VALUES.deep_dup.deep_merge(settings)
+    @plan = plan
+  end
+
+  def config
+    {
+      fog_of_war_meters: fog_of_war_meters,
+      meters_between_routes: meters_between_routes,
+      preferred_map_layer: preferred_map_layer,
+      speed_colored_routes: speed_colored_routes,
+      points_rendering_mode: points_rendering_mode,
+      minutes_between_routes: minutes_between_routes,
+      time_threshold_minutes: time_threshold_minutes,
+      merge_threshold_minutes: merge_threshold_minutes,
+      live_map_enabled: live_map_enabled,
+      route_opacity: route_opacity,
+      route_color: route_color,
+      track_color: track_color,
+      immich_url: immich_url,
+      immich_api_key: immich_api_key,
+      photoprism_url: photoprism_url,
+      photoprism_api_key: photoprism_api_key,
+      airtrail_url: airtrail_url,
+      airtrail_api_key: airtrail_api_key,
+      maps: maps,
+      distance_unit: distance_unit,
+      visits_suggestions_enabled: visits_suggestions_enabled?,
+      speed_color_scale: speed_color_scale,
+      fog_of_war_threshold: fog_of_war_threshold,
+      fog_of_war_mode: fog_of_war_mode,
+      enabled_map_layers: enabled_map_layers,
+      maps_maplibre_style: maps_maplibre_style,
+      maps_maplibre_tiles_url: maps_maplibre_tiles_url,
+      maps_maplibre_custom_theme: maps_maplibre_custom_theme,
+      globe_projection: globe_projection,
+      transportation_thresholds: transportation_thresholds,
+      transportation_expert_thresholds: transportation_expert_thresholds,
+      enabled_transportation_modes: enabled_transportation_modes,
+      transportation_expert_mode: transportation_expert_mode?,
+      min_minutes_spent_in_city: min_minutes_spent_in_city,
+      max_gap_minutes_in_city: max_gap_minutes_in_city,
+      gps_filtering_enabled: gps_filtering_enabled?,
+      timezone: timezone,
+      visit_radius_meters: visit_radius_meters,
+      visit_min_points: visit_min_points,
+      visit_min_duration_minutes: visit_min_duration_minutes,
+      visit_density_fill_enabled: visit_density_fill_enabled?,
+      stay_max_gap_minutes: stay_max_gap_minutes,
+      point_dragging_enabled: point_dragging_enabled?
+    }
+  end
+
+  def fog_of_war_meters
+    settings['fog_of_war_meters']
+  end
+
+  def meters_between_routes
+    settings['meters_between_routes']
+  end
+
+  def preferred_map_layer
+    settings['preferred_map_layer']
+  end
+
+  def speed_colored_routes
+    settings['speed_colored_routes']
+  end
+
+  def points_rendering_mode
+    settings['points_rendering_mode']
+  end
+
+  def minutes_between_routes
+    settings['minutes_between_routes']
+  end
+
+  def time_threshold_minutes
+    settings['time_threshold_minutes'].to_i.clamp(1, 1440)
+  end
+
+  def merge_threshold_minutes
+    settings['merge_threshold_minutes'].to_i
+  end
+
+  def live_map_enabled
+    settings['live_map_enabled']
+  end
+
+  def route_opacity
+    settings['route_opacity']
+  end
+
+  def route_color
+    settings['route_color']
+  end
+
+  def track_color
+    settings['track_color']
+  end
+
+  def immich_url
+    settings['immich_url']
+  end
+
+  def immich_api_key
+    settings['immich_api_key']
+  end
+
+  def photoprism_url
+    settings['photoprism_url']
+  end
+
+  def photoprism_api_key
+    settings['photoprism_api_key']
+  end
+
+  def immich_skip_ssl_verification
+    ActiveModel::Type::Boolean.new.cast(settings['immich_skip_ssl_verification'])
+  end
+
+  def photoprism_skip_ssl_verification
+    ActiveModel::Type::Boolean.new.cast(settings['photoprism_skip_ssl_verification'])
+  end
+
+  def airtrail_url
+    settings['airtrail_url']
+  end
+
+  def airtrail_api_key
+    settings['airtrail_api_key']
+  end
+
+  def airtrail_skip_ssl_verification
+    ActiveModel::Type::Boolean.new.cast(settings['airtrail_skip_ssl_verification'])
+  end
+
+  def maps
+    m = settings['maps']
+    return m unless lite?
+
+    # Lite users cannot customize map layers or POI groups
+    m&.except('hidden_tile_categories', 'disabled_poi_groups') || m
+  end
+
+  def distance_unit
+    settings.dig('maps', 'distance_unit') || DEFAULT_VALUES.dig('maps', 'distance_unit')
+  end
+
+  def visits_suggestions_enabled?
+    settings['visits_suggestions_enabled'] == 'true'
+  end
+
+  def speed_color_scale
+    settings['speed_color_scale']
+  end
+
+  def fog_of_war_threshold
+    settings['fog_of_war_threshold']
+  end
+
+  def fog_of_war_mode
+    value = settings['fog_of_war_mode'].to_s
+    FOG_OF_WAR_MODES.include?(value) ? value : 'points'
+  end
+
+  def enabled_map_layers
+    layers = settings['enabled_map_layers']
+    lite? ? layers - GATED_MAP_LAYERS : layers
+  end
+
+  def maps_maplibre_style
+    settings['maps_maplibre_style']
+  end
+
+  def maps_maplibre_custom_theme
+    settings['maps_maplibre_custom_theme']
+  end
+
+  def maps_maplibre_tiles_url
+    settings['maps_maplibre_tiles_url']
+  end
+
+  def globe_projection
+    return false if lite?
+
+    ActiveModel::Type::Boolean.new.cast(settings['globe_projection'])
+  end
+
+  def monthly_digest_emails_enabled?
+    fetch_with_legacy_fallback('monthly_digest_emails_enabled', 'digest_emails_enabled', default: true)
+  end
+
+  def yearly_digest_emails_enabled?
+    fetch_with_legacy_fallback('yearly_digest_emails_enabled', 'digest_emails_enabled', default: true)
+  end
+
+  def news_emails_enabled?
+    value = settings['news_emails_enabled']
+    return true if value.nil?
+
+    ActiveModel::Type::Boolean.new.cast(value)
+  end
+
+  def supporter_email
+    settings['supporter_email']
+  end
+
+  def supporter_github_username
+    settings['supporter_github_username']
+  end
+
+  def show_supporter_badge?
+    value = settings['show_supporter_badge']
+    return true if value.nil?
+
+    ActiveModel::Type::Boolean.new.cast(value)
+  end
+
+  def transportation_thresholds
+    settings['transportation_thresholds'] || DEFAULT_VALUES['transportation_thresholds']
+  end
+
+  def transportation_expert_thresholds
+    settings['transportation_expert_thresholds'] || DEFAULT_VALUES['transportation_expert_thresholds']
+  end
+
+  def transportation_expert_mode?
+    ActiveModel::Type::Boolean.new.cast(settings['transportation_expert_mode'])
+  end
+
+  def enabled_transportation_modes
+    raw = settings['enabled_transportation_modes']
+    valid = Track::TRANSPORTATION_MODES.keys.map(&:to_s)
+    return valid if raw.nil? || (raw.respond_to?(:empty?) && raw.empty?)
+
+    intersection = Array(raw).map(&:to_s) & valid
+    intersection.presence || valid
+  end
+
+  def min_minutes_spent_in_city
+    (settings['min_minutes_spent_in_city'] || DEFAULT_VALUES['min_minutes_spent_in_city']).to_i
+  end
+
+  def max_gap_minutes_in_city
+    (settings['max_gap_minutes_in_city'] || DEFAULT_VALUES['max_gap_minutes_in_city']).to_i
+  end
+
+  def timezone
+    settings['timezone'] || DEFAULT_VALUES['timezone']
+  end
+
+  def persisted_timezone
+    settings['timezone'].presence
+  end
+
+  def gps_filtering_enabled?
+    value = settings['gps_filtering_enabled']
+    return true if value.nil?
+
+    ActiveModel::Type::Boolean.new.cast(value)
+  end
+
+  def point_dragging_enabled?
+    ActiveModel::Type::Boolean.new.cast(settings['point_dragging_enabled']) || false
+  end
+
+  def visit_radius_meters
+    settings['visit_radius_meters'].to_i.clamp(5, 500)
+  end
+
+  def visit_min_points
+    settings['visit_min_points'].to_i.clamp(2, 20)
+  end
+
+  def visit_min_duration_minutes
+    raw = settings['visit_min_duration_minutes'] || DEFAULT_VALUES['visit_min_duration_minutes']
+    raw.to_i.clamp(1, 60)
+  end
+
+  def visit_density_fill_enabled?
+    ActiveModel::Type::Boolean.new.cast(settings['visit_density_fill_enabled'])
+  end
+
+  def stay_max_gap_minutes
+    settings['stay_max_gap_minutes'].to_i.clamp(5, 720)
+  end
+
+  private
+
+  def lite?
+    @plan&.to_sym == :lite
+  end
+
+  def fetch_with_legacy_fallback(new_key, legacy_key, default:)
+    return ActiveModel::Type::Boolean.new.cast(settings[new_key]) if settings.key?(new_key)
+    return ActiveModel::Type::Boolean.new.cast(settings[legacy_key]) if settings.key?(legacy_key)
+
+    default
+  end
+end

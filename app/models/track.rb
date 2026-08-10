@@ -1,0 +1,283 @@
+# frozen_string_literal: true
+
+class Track < ApplicationRecord
+  include Calculateable
+  include Demoable
+  include DistanceConvertible
+
+  TRANSPORTATION_MODES = {
+    unknown: 0,
+    stationary: 1,
+    walking: 2,
+    running: 3,
+    cycling: 4,
+    driving: 5,
+    bus: 6,
+    train: 7,
+    flying: 8,
+    boat: 9,
+    motorcycle: 10
+  }.freeze
+
+  belongs_to :user
+  has_many :points, dependent: :nullify
+  has_many :track_segments, dependent: :destroy
+  has_many :shared_links, -> { where(resource_type: SharedLink.resource_types[:track]) },
+           foreign_key: :resource_id, inverse_of: false, dependent: :destroy
+
+  enum :dominant_mode, TRANSPORTATION_MODES, prefix: true
+
+  validates :start_at, :end_at, :original_path, presence: true
+  validates :distance, :avg_speed, :duration, numericality: { greater_than_or_equal_to: 0 }
+
+  after_update :recalculate_path_and_distance!, if: lambda {
+    points.exists? && (saved_change_to_start_at? || saved_change_to_end_at?)
+  }
+  after_create :broadcast_track_created
+  after_update :broadcast_track_updated
+  after_destroy :broadcast_track_destroyed
+
+  scope :by_mode, ->(mode) { where(dominant_mode: mode) }
+  scope :with_unknown_mode, -> { where(dominant_mode: :unknown) }
+  scope :with_detected_mode, -> { where.not(dominant_mode: :unknown) }
+  scope :without_phantom_stationary, lambda { |distance_threshold_m|
+    where('NOT (dominant_mode = ? AND distance < ?)',
+          dominant_modes[:stationary], distance_threshold_m)
+  }
+
+  # Convert raw distance + duration into a stored avg_speed (km/h),
+  # capped to the column's precision limit.
+  def self.avg_speed_kmh(distance_meters, duration_seconds)
+    return 0.0 if duration_seconds.to_i <= 0 || distance_meters.to_i <= 0
+
+    speed_mps = distance_meters.to_f / duration_seconds
+    speed_kmh = (speed_mps * 3.6).round(2)
+    [speed_kmh, 999_999.99].min
+  end
+
+  # Bulk-delete tracks (and their segments) by id. delete_all skips the
+  # after_destroy callback, so the destroyed broadcast is replayed explicitly
+  # to keep live maps from showing the removed route until reload.
+  def self.delete_orphaned(ids)
+    ids = Array(ids).uniq
+    return 0 if ids.empty?
+
+    owners = where(id: ids).pluck(:id, :user_id)
+    return 0 if owners.empty?
+
+    TrackSegment.where(track_id: ids).delete_all
+    deleted = where(id: ids).delete_all
+    broadcast_destroyed(owners)
+    deleted
+  end
+
+  def self.broadcast_destroyed(track_owner_pairs)
+    users = User.where(id: track_owner_pairs.map(&:last).uniq).index_by(&:id)
+
+    track_owner_pairs.each do |track_id, user_id|
+      user = users[user_id]
+      next unless user
+
+      TracksChannel.broadcast_to(user, { action: 'destroyed', track_id: track_id })
+    end
+  end
+  private_class_method :broadcast_destroyed
+
+  def recalculate_extra_metrics
+    bounds = points.pick(Arel.sql('MIN(timestamp), MAX(timestamp)'))
+    return if bounds.nil? || bounds.compact.size < 2
+
+    self.duration = bounds[1] - bounds[0]
+    self.avg_speed = self.class.avg_speed_kmh(distance, duration)
+  end
+
+  def self.last_for_day(user, day)
+    day_start = day.beginning_of_day
+    day_end = day.end_of_day
+
+    where(user: user)
+      .where(end_at: day_start..day_end)
+      .order(end_at: :desc)
+      .first
+  end
+
+  def self.segment_points_in_sql(user_id, start_timestamp, end_timestamp, time_threshold_minutes,
+                                 distance_threshold_meters, untracked_only: false)
+    time_threshold_seconds = time_threshold_minutes * 60
+
+    where_clause = if untracked_only
+                     'WHERE user_id = $1 AND timestamp BETWEEN $2 AND $3 AND track_id IS NULL'
+                   else
+                     'WHERE user_id = $1 AND timestamp BETWEEN $2 AND $3'
+                   end
+    where_clause += ' AND (anomaly IS NOT TRUE)'
+
+    sql = <<~SQL
+      WITH points_with_gaps AS (
+        SELECT
+          id,
+          timestamp,
+          lonlat,
+          tracker_id,
+          LAG(lonlat) OVER (PARTITION BY tracker_id ORDER BY timestamp) as prev_lonlat,
+          LAG(timestamp) OVER (PARTITION BY tracker_id ORDER BY timestamp) as prev_timestamp,
+          ST_Distance(
+            lonlat::geography,
+            LAG(lonlat) OVER (PARTITION BY tracker_id ORDER BY timestamp)::geography
+          ) as distance_meters,
+          (timestamp - LAG(timestamp) OVER (PARTITION BY tracker_id ORDER BY timestamp)) as time_diff_seconds
+        FROM points
+        #{where_clause}
+      ),
+      segment_breaks AS (
+        SELECT *,
+          CASE
+            WHEN prev_lonlat IS NULL THEN 1
+            WHEN time_diff_seconds > $4 THEN 1
+            WHEN distance_meters > $5 THEN 1
+            ELSE 0
+          END as is_break
+        FROM points_with_gaps
+      ),
+      segments AS (
+        SELECT *,
+          SUM(is_break) OVER (PARTITION BY tracker_id ORDER BY timestamp ROWS UNBOUNDED PRECEDING) as segment_id
+        FROM segment_breaks
+      )
+      SELECT
+        tracker_id,
+        segment_id,
+        array_agg(id ORDER BY timestamp) as point_ids,
+        count(*) as point_count,
+        min(timestamp) as start_timestamp,
+        max(timestamp) as end_timestamp,
+        sum(COALESCE(distance_meters, 0)) as total_distance_meters
+      FROM segments
+      GROUP BY tracker_id, segment_id
+      HAVING count(*) >= 2
+      ORDER BY tracker_id NULLS FIRST, segment_id
+    SQL
+
+    results = Point.connection.exec_query(
+      sql,
+      'segment_points_in_sql',
+      [user_id, start_timestamp, end_timestamp, time_threshold_seconds, distance_threshold_meters]
+    )
+
+    # Convert results to segment data
+    segments_data = []
+    results.each do |row|
+      segments_data << {
+        segment_id: row['segment_id'].to_i,
+        tracker_id: row['tracker_id'],
+        point_ids: parse_postgres_array(row['point_ids']),
+        point_count: row['point_count'].to_i,
+        start_timestamp: row['start_timestamp'].to_i,
+        end_timestamp: row['end_timestamp'].to_i,
+        total_distance_meters: row['total_distance_meters'].to_f
+      }
+    end
+
+    segments_data
+  end
+
+  # Get actual Point objects for each segment with pre-calculated distances
+  def self.get_segments_with_points(user_id, start_timestamp, end_timestamp, time_threshold_minutes,
+                                    distance_threshold_meters, untracked_only: false)
+    segments_data = segment_points_in_sql(
+      user_id,
+      start_timestamp,
+      end_timestamp,
+      time_threshold_minutes,
+      distance_threshold_meters,
+      untracked_only: untracked_only
+    )
+
+    point_ids = segments_data.flat_map { |seg| seg[:point_ids] }
+    points_by_id = Point.where(id: point_ids).index_by(&:id)
+
+    segments_data.map do |seg_data|
+      {
+        points: seg_data[:point_ids].map { |id| points_by_id[id] }.compact,
+        pre_calculated_distance: seg_data[:total_distance_meters],
+        start_timestamp: seg_data[:start_timestamp],
+        end_timestamp: seg_data[:end_timestamp],
+        tracker_id: seg_data[:tracker_id]
+      }
+    end
+  end
+
+  # Parse PostgreSQL array format like "{1,2,3}" into Ruby array
+  def self.parse_postgres_array(pg_array_string)
+    return [] if pg_array_string.blank?
+
+    # Remove curly braces and split by comma
+    pg_array_string.gsub(/[{}]/, '').split(',').map(&:to_i)
+  end
+
+  def activity_breakdown
+    track_segments.group(:transportation_mode).sum(:duration)
+  end
+
+  MOVING_DISTANCE_THRESHOLD_M = 50
+
+  def update_dominant_mode!
+    segments = track_segments.reload
+    return update_column(:dominant_mode, :unknown) if segments.empty?
+
+    update_column(:dominant_mode, self.class.pick_dominant_mode(segments) || :unknown)
+  end
+
+  def self.pick_dominant_mode(segments)
+    distance_by_mode = Hash.new(0)
+    duration_by_mode = Hash.new(0)
+    segments.each do |s|
+      distance_by_mode[s.transportation_mode] += s.distance.to_i
+      duration_by_mode[s.transportation_mode] += s.duration.to_i
+    end
+
+    moving = distance_by_mode.reject do |mode, dist|
+      %w[stationary unknown].include?(mode.to_s) || dist < MOVING_DISTANCE_THRESHOLD_M
+    end
+
+    if moving.any?
+      moving.max_by { |mode, dist| [dist, duration_by_mode[mode]] }&.first
+    else
+      duration_by_mode.max_by { |_, dur| dur }&.first
+    end
+  end
+
+  def broadcast_geojson_updated
+    Rails.logger.info "[Track#broadcast_geojson_updated] Broadcasting track #{id} to user #{user_id}"
+    geojson_feature = Tracks::GeojsonSerializer.new(self).call[:features].first
+
+    Rails.logger.info "[Track#broadcast_geojson_updated] GeoJSON feature id: #{geojson_feature[:properties][:id]}"
+
+    TracksChannel.broadcast_to(user, { action: 'geojson_updated', track: geojson_feature })
+
+    Rails.logger.info "[Track#broadcast_geojson_updated] Broadcast complete for track #{id}"
+  end
+
+  private
+
+  def broadcast_track_created
+    broadcast_track_update('created')
+  end
+
+  def broadcast_track_updated
+    broadcast_track_update('updated')
+  end
+
+  def broadcast_track_destroyed
+    TracksChannel.broadcast_to(user, { action: 'destroyed', track_id: id })
+  end
+
+  def broadcast_track_update(action)
+    TracksChannel.broadcast_to(
+      user, {
+        action: action,
+        track: TrackSerializer.new(self).call
+      }
+    )
+  end
+end

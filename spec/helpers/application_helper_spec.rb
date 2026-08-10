@@ -1,0 +1,693 @@
+# frozen_string_literal: true
+
+require 'rails_helper'
+
+RSpec.describe ApplicationHelper, type: :helper do
+  describe '#pro_badge_tag' do
+    context 'when user has full access' do
+      before do
+        allow(helper).to receive(:current_user).and_return(double(plan_restricted?: false))
+      end
+
+      it 'returns nil' do
+        expect(helper.pro_badge_tag).to be_nil
+      end
+    end
+
+    context 'when user is plan-restricted' do
+      let(:fake_user) { double(plan_restricted?: true, generate_subscription_token: 'test_token') }
+
+      before do
+        allow(helper).to receive(:current_user).and_return(fake_user)
+        # Stub icon helper used inside pro_badge_tag
+        allow(helper).to receive(:icon).and_return('🔒'.html_safe)
+        allow(helper).to receive(:controller).and_return(
+          double(class: double(name: 'ApplicationController'))
+        )
+        # Lite users only exist on cloud — `pro_badge_tag` returns nil on
+        # self-hosted via `current_user&.lite?` upstream, so this stub
+        # mirrors the cloud path the test is exercising.
+        allow(DawarichSettings).to receive(:self_hosted?).and_return(false)
+      end
+
+      it 'renders a DaisyUI tooltip with data-tip attribute' do
+        result = helper.pro_badge_tag
+        expect(result).to include('tooltip')
+        expect(result).to include('tooltip-bottom')
+        expect(result).to include('data-tip=')
+      end
+
+      it 'includes preview text when preview is true' do
+        result = helper.pro_badge_tag(preview: true)
+        expect(result).to include('Available on Pro')
+        expect(result).to include('click to preview')
+      end
+
+      it 'excludes preview text when preview is false' do
+        result = helper.pro_badge_tag(preview: false)
+        expect(result).to include('Available on Pro')
+        expect(result).not_to include('click to preview')
+      end
+
+      it 'does not use native title attribute' do
+        result = helper.pro_badge_tag
+        expect(result).not_to include(' title=')
+      end
+
+      it 'renders as a link to the subscription manager' do
+        result = helper.pro_badge_tag
+        expect(result).to include('<a ')
+        expect(result).to include("#{MANAGER_URL}/auth/dawarich")
+        expect(result).to include('token=test_token')
+        expect(result).to include('target="_blank"')
+        expect(result).to include('tabindex="0"')
+      end
+    end
+  end
+
+  describe '#subscription_upgrade_url' do
+    let(:user) { build_stubbed(:user) }
+
+    it 'returns trial_resume_path for pending_payment users' do
+      allow(user).to receive(:pending_payment?).and_return(true)
+      expect(helper.subscription_upgrade_url(user)).to eq(Rails.application.routes.url_helpers.trial_resume_path)
+    end
+
+    it 'returns MANAGER_URL/auth/dawarich for non-pending_payment users' do
+      allow(user).to receive(:pending_payment?).and_return(false)
+      allow(user).to receive(:generate_subscription_token).and_return('fake_token')
+      stub_const('MANAGER_URL', 'https://manager.example.com')
+      expect(helper.subscription_upgrade_url(user)).to eq('https://manager.example.com/auth/dawarich?token=fake_token')
+    end
+  end
+
+  describe '#upgrade_url' do
+    context 'on self-hosted instances' do
+      before { allow(DawarichSettings).to receive(:self_hosted?).and_return(true) }
+
+      it 'returns empty string without invoking JWT generation' do
+        # Would raise KeyError on self-hosted (no JWT_SECRET_KEY) if not guarded.
+        expect(helper.upgrade_url).to eq('')
+      end
+    end
+  end
+
+  describe '#family_upgrade_url' do
+    let(:secret) { ENV.fetch('JWT_SECRET_KEY', 'test_secret') }
+
+    def token_from(url)
+      url[/token=([^&]+)/, 1]
+    end
+
+    def decode(token)
+      JWT.decode(token, secret, true, { algorithm: 'HS256' }).first
+    end
+
+    context 'on cloud instances' do
+      let(:user) { create(:user) }
+
+      before do
+        allow(DawarichSettings).to receive(:self_hosted?).and_return(false)
+        allow(helper).to receive(:current_user).and_return(user)
+        stub_const('MANAGER_URL', 'https://manager.example.com')
+      end
+
+      it 'embeds a token whose payload carries the family plan and annual interval' do
+        url = helper.family_upgrade_url
+
+        expect(url).to start_with('https://manager.example.com/auth/dawarich?token=')
+        payload = decode(token_from(url))
+        expect(payload['plan']).to eq('family')
+        expect(payload['interval']).to eq('annual')
+        expect(payload['user_id']).to eq(user.id)
+      end
+    end
+
+    context 'on self-hosted instances' do
+      before { allow(DawarichSettings).to receive(:self_hosted?).and_return(true) }
+
+      it 'returns an empty string' do
+        expect(helper.family_upgrade_url).to eq('')
+      end
+    end
+  end
+
+  describe '#subscription_button_label' do
+    let(:user) { build_stubbed(:user, active_until: 3.days.from_now) }
+
+    it 'returns "Finish signup" for pending_payment users' do
+      allow(user).to receive(:pending_payment?).and_return(true)
+      expect(helper.subscription_button_label(user)).to eq('Finish signup')
+    end
+
+    it 'returns the trial days remaining for non-pending_payment users' do
+      allow(user).to receive(:pending_payment?).and_return(false)
+      expect(helper.subscription_button_label(user)).to match(/left|Expired/)
+    end
+  end
+
+  describe '#subscription_cta_label' do
+    let(:user) { build_stubbed(:user) }
+
+    it 'returns "Resume" for pending_payment users' do
+      allow(user).to receive(:pending_payment?).and_return(true)
+      expect(helper.subscription_cta_label(user)).to eq('Resume')
+    end
+
+    it 'returns "Subscribe" for non-pending_payment users' do
+      allow(user).to receive(:pending_payment?).and_return(false)
+      expect(helper.subscription_cta_label(user)).to eq('Subscribe')
+    end
+  end
+
+  describe '#onboarding_modal_showable?' do
+    context 'when onboarding is not completed' do
+      let(:user) { build(:user, settings: {}) }
+
+      it 'returns true' do
+        expect(helper.onboarding_modal_showable?(user)).to be true
+      end
+    end
+
+    context 'when onboarding is completed' do
+      let(:user) { build(:user, settings: { 'onboarding_completed' => true }) }
+
+      it 'returns false' do
+        expect(helper.onboarding_modal_showable?(user)).to be false
+      end
+    end
+
+    context 'when settings is nil' do
+      let(:user) { build(:user, settings: nil) }
+
+      it 'returns true' do
+        expect(helper.onboarding_modal_showable?(user)).to be true
+      end
+    end
+  end
+
+  describe '#mobile_browser?' do
+    context 'when user agent is iPhone' do
+      before do
+        allow(helper.request).to receive(:user_agent)
+          .and_return('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)')
+      end
+
+      it 'returns true' do
+        expect(helper.mobile_browser?).to be true
+      end
+    end
+
+    context 'when user agent is iPad' do
+      before do
+        allow(helper.request).to receive(:user_agent)
+          .and_return('Mozilla/5.0 (iPad; CPU OS 17_0)')
+      end
+
+      it 'returns true' do
+        expect(helper.mobile_browser?).to be true
+      end
+    end
+
+    context 'when user agent is Android' do
+      before do
+        allow(helper.request).to receive(:user_agent)
+          .and_return('Mozilla/5.0 (Linux; Android 14; Pixel 8)')
+      end
+
+      it 'returns true' do
+        expect(helper.mobile_browser?).to be true
+      end
+    end
+
+    context 'when user agent is desktop browser' do
+      before do
+        allow(helper.request).to receive(:user_agent)
+          .and_return('Mozilla/5.0 (Macintosh; Intel Mac OS X)')
+      end
+
+      it 'returns false' do
+        expect(helper.mobile_browser?).to be false
+      end
+    end
+
+    context 'when user agent is nil' do
+      before { allow(helper.request).to receive(:user_agent).and_return(nil) }
+
+      it 'returns false' do
+        expect(helper.mobile_browser?).to be false
+      end
+    end
+  end
+
+  describe '#visible_omniauth_providers' do
+    before do
+      helper.define_singleton_method(:resource_class) { User } unless helper.respond_to?(:resource_class)
+      allow(User).to receive(:omniauth_providers).and_return(%i[google_oauth2 github])
+    end
+
+    context 'on desktop browser' do
+      before { allow(helper).to receive(:mobile_browser?).and_return(false) }
+
+      it 'returns all providers' do
+        expect(helper.visible_omniauth_providers).to eq(%i[google_oauth2 github])
+      end
+    end
+
+    context 'on mobile browser' do
+      before { allow(helper).to receive(:mobile_browser?).and_return(true) }
+
+      it 'excludes google_oauth2' do
+        expect(helper.visible_omniauth_providers).to eq([:github])
+      end
+    end
+
+    context 'on mobile with only google_oauth2' do
+      before do
+        allow(User).to receive(:omniauth_providers).and_return([:google_oauth2])
+        allow(helper).to receive(:mobile_browser?).and_return(true)
+      end
+
+      it 'returns empty array' do
+        expect(helper.visible_omniauth_providers).to eq([])
+      end
+    end
+  end
+
+  describe '#apple_web_sign_in_available?' do
+    context 'when APPLE_WEB_SIGN_IN_ENABLED is true' do
+      before { stub_const('APPLE_WEB_SIGN_IN_ENABLED', true) }
+
+      it 'is available on a desktop browser' do
+        allow(helper).to receive(:mobile_browser?).and_return(false)
+        expect(helper.apple_web_sign_in_available?).to be true
+      end
+
+      it 'is hidden on a mobile browser (embedded webview cannot complete the flow)' do
+        allow(helper).to receive(:mobile_browser?).and_return(true)
+        expect(helper.apple_web_sign_in_available?).to be false
+      end
+    end
+
+    context 'when APPLE_WEB_SIGN_IN_ENABLED is false' do
+      before { stub_const('APPLE_WEB_SIGN_IN_ENABLED', false) }
+
+      it 'is hidden even on a desktop browser' do
+        allow(helper).to receive(:mobile_browser?).and_return(false)
+        expect(helper.apple_web_sign_in_available?).to be false
+      end
+    end
+  end
+
+  describe '#oauth_button_config' do
+    context 'when provider is google_oauth2' do
+      subject(:config) { helper.oauth_button_config(:google_oauth2) }
+
+      it 'returns Google label' do
+        expect(config[:label]).to eq('Sign in with Google')
+      end
+
+      it 'returns Google brand CSS classes' do
+        expect(config[:css_class]).to include('bg-white')
+        expect(config[:css_class]).to include('text-gray-700')
+      end
+
+      it 'returns an SVG icon' do
+        expect(config[:icon]).to include('<svg')
+        expect(config[:icon]).to include('</svg>')
+      end
+    end
+
+    context 'when provider is github' do
+      subject(:config) { helper.oauth_button_config(:github) }
+
+      it 'returns GitHub label' do
+        expect(config[:label]).to eq('Sign in with GitHub')
+      end
+
+      it 'returns GitHub brand CSS classes' do
+        expect(config[:css_class]).to include('bg-[#24292f]')
+        expect(config[:css_class]).to include('text-white')
+      end
+
+      it 'returns an SVG icon' do
+        expect(config[:icon]).to include('<svg')
+      end
+    end
+
+    context 'when provider is openid_connect' do
+      subject(:config) { helper.oauth_button_config(:openid_connect) }
+
+      before { stub_const('OIDC_PROVIDER_NAME', 'Authentik') }
+
+      it 'returns label using OIDC provider name' do
+        expect(config[:label]).to eq('Sign in with Authentik')
+      end
+
+      it 'returns primary CSS class' do
+        expect(config[:css_class]).to include('btn-primary')
+      end
+
+      it 'returns no icon' do
+        expect(config[:icon]).to be_nil
+      end
+    end
+
+    context 'when provider is unknown' do
+      subject(:config) { helper.oauth_button_config(:some_provider) }
+
+      it 'returns generic label' do
+        expect(config[:label]).to eq('Sign in with SomeProvider')
+      end
+
+      it 'returns primary CSS class' do
+        expect(config[:css_class]).to include('btn-primary')
+      end
+
+      it 'returns no icon' do
+        expect(config[:icon]).to be_nil
+      end
+    end
+  end
+
+  describe '#oauth_provider_name' do
+    context 'when provider is openid_connect' do
+      it 'returns the custom OIDC provider name' do
+        stub_const('OIDC_PROVIDER_NAME', 'Authentik')
+
+        expect(helper.oauth_provider_name(:openid_connect)).to eq('Authentik')
+      end
+
+      it 'returns default name when OIDC_PROVIDER_NAME is not set' do
+        stub_const('OIDC_PROVIDER_NAME', 'Openid Connect')
+
+        expect(helper.oauth_provider_name(:openid_connect)).to eq('Openid Connect')
+      end
+    end
+
+    context 'when provider is not openid_connect' do
+      it 'returns camelized provider name for github' do
+        expect(helper.oauth_provider_name(:github)).to eq('GitHub')
+      end
+
+      it 'returns camelized provider name for google_oauth2' do
+        expect(helper.oauth_provider_name(:google_oauth2)).to eq('GoogleOauth2')
+      end
+    end
+  end
+
+  describe '#oauth_provider_display_name' do
+    it 'maps google_oauth2 to Google' do
+      expect(helper.oauth_provider_display_name('google_oauth2')).to eq('Google')
+    end
+
+    it 'maps the legacy google value to Google' do
+      expect(helper.oauth_provider_display_name('google')).to eq('Google')
+    end
+
+    it 'maps apple to Apple' do
+      expect(helper.oauth_provider_display_name('apple')).to eq('Apple')
+    end
+
+    it 'maps github to GitHub' do
+      expect(helper.oauth_provider_display_name('github')).to eq('GitHub')
+    end
+
+    it 'maps openid_connect to the configured OIDC provider name' do
+      stub_const('OIDC_PROVIDER_NAME', 'Authentik')
+
+      expect(helper.oauth_provider_display_name('openid_connect')).to eq('Authentik')
+    end
+
+    it 'falls back to a humanized name for unknown providers' do
+      expect(helper.oauth_provider_display_name('gitlab')).to eq('Gitlab')
+    end
+  end
+
+  describe '#email_password_registration_enabled?' do
+    context 'in cloud mode' do
+      before do
+        allow(DawarichSettings).to receive(:self_hosted?).and_return(false)
+      end
+
+      it 'returns true' do
+        expect(helper.email_password_registration_enabled?).to be true
+      end
+    end
+
+    context 'in self-hosted mode' do
+      before do
+        allow(DawarichSettings).to receive(:self_hosted?).and_return(true)
+      end
+
+      context 'when ALLOW_EMAIL_PASSWORD_REGISTRATION is true' do
+        before do
+          stub_const('ALLOW_EMAIL_PASSWORD_REGISTRATION', true)
+        end
+
+        it 'returns true' do
+          expect(helper.email_password_registration_enabled?).to be true
+        end
+      end
+
+      context 'when ALLOW_EMAIL_PASSWORD_REGISTRATION is false' do
+        before do
+          stub_const('ALLOW_EMAIL_PASSWORD_REGISTRATION', false)
+        end
+
+        it 'returns false' do
+          expect(helper.email_password_registration_enabled?).to be false
+        end
+      end
+
+      context 'when ALLOW_EMAIL_PASSWORD_REGISTRATION is not set (default)' do
+        before do
+          stub_const('ALLOW_EMAIL_PASSWORD_REGISTRATION', false)
+        end
+
+        it 'returns false (default)' do
+          expect(helper.email_password_registration_enabled?).to be false
+        end
+      end
+    end
+  end
+
+  describe '#email_password_login_enabled?' do
+    context 'when OIDC is not enabled' do
+      before do
+        allow(DawarichSettings).to receive(:oidc_enabled?).and_return(false)
+      end
+
+      it 'returns true regardless of ALLOW_EMAIL_PASSWORD_LOGIN' do
+        stub_const('ALLOW_EMAIL_PASSWORD_LOGIN', false)
+
+        expect(helper.email_password_login_enabled?).to be true
+      end
+    end
+
+    context 'in cloud mode with OAuth providers (GitHub/Google)' do
+      before do
+        allow(DawarichSettings).to receive(:oidc_enabled?).and_return(false)
+      end
+
+      it 'always returns true (OAuth is supplementary to email/password)' do
+        stub_const('ALLOW_EMAIL_PASSWORD_LOGIN', false)
+
+        expect(helper.email_password_login_enabled?).to be true
+      end
+    end
+
+    context 'when OIDC is enabled' do
+      before do
+        allow(DawarichSettings).to receive(:oidc_enabled?).and_return(true)
+      end
+
+      context 'when ALLOW_EMAIL_PASSWORD_LOGIN is true' do
+        before do
+          stub_const('ALLOW_EMAIL_PASSWORD_LOGIN', true)
+        end
+
+        it 'returns true' do
+          expect(helper.email_password_login_enabled?).to be true
+        end
+      end
+
+      context 'when ALLOW_EMAIL_PASSWORD_LOGIN is false' do
+        before do
+          stub_const('ALLOW_EMAIL_PASSWORD_LOGIN', false)
+        end
+
+        it 'returns false (OIDC-only mode)' do
+          expect(helper.email_password_login_enabled?).to be false
+        end
+      end
+    end
+  end
+
+  describe '#point_speed' do
+    context 'when speed is zero or negative' do
+      it 'returns the original value for zero' do
+        expect(helper.point_speed(0)).to eq(0)
+      end
+
+      it 'returns the original value for negative' do
+        expect(helper.point_speed(-1)).to eq(-1)
+      end
+    end
+
+    context 'when speed is positive (m/s)' do
+      it 'converts m/s to km/h by default' do
+        expect(helper.point_speed(10)).to eq(36.0)
+      end
+
+      it 'converts m/s to km/h when unit is km' do
+        expect(helper.point_speed(10, 'km')).to eq(36.0)
+      end
+
+      it 'converts m/s to mph when unit is mi' do
+        expect(helper.point_speed(10, 'mi')).to eq(22.4)
+      end
+
+      it 'handles string input' do
+        expect(helper.point_speed('10', 'km')).to eq(36.0)
+      end
+    end
+  end
+
+  describe '#speed_label' do
+    it 'returns km/h by default' do
+      expect(helper.speed_label).to eq('km/h')
+    end
+
+    it 'returns km/h when unit is km' do
+      expect(helper.speed_label('km')).to eq('km/h')
+    end
+
+    it 'returns mph when unit is mi' do
+      expect(helper.speed_label('mi')).to eq('mph')
+    end
+  end
+
+  describe '#trial_button_class' do
+    it 'returns btn-error for a user with nil active_until' do
+      user = build(:user, active_until: nil)
+      expect(helper.trial_button_class(user)).to eq('btn-error')
+    end
+
+    it 'returns btn-info when trial has 5-8 days left' do
+      user = build(:user, active_until: 6.days.from_now)
+      expect(helper.trial_button_class(user)).to eq('btn-info')
+    end
+
+    it 'returns btn-warning when trial has 2-4 days left' do
+      user = build(:user, active_until: 3.days.from_now)
+      expect(helper.trial_button_class(user)).to eq('btn-warning')
+    end
+
+    it 'returns btn-error when trial has 0-1 days left' do
+      user = build(:user, active_until: 1.day.from_now)
+      expect(helper.trial_button_class(user)).to eq('btn-error')
+    end
+
+    it 'returns btn-success when trial has more than 8 days left' do
+      user = build(:user, active_until: 10.days.from_now)
+      expect(helper.trial_button_class(user)).to eq('btn-success')
+    end
+
+    it 'returns btn-error for an expired active_until' do
+      user = build(:user, active_until: 3.days.ago)
+      expect(helper.trial_button_class(user)).to eq('btn-error')
+    end
+  end
+
+  describe '#preferred_map_path' do
+    context 'when user is not signed in' do
+      before do
+        allow(helper).to receive(:user_signed_in?).and_return(false)
+      end
+
+      it 'returns map_v2_path by default' do
+        expect(helper.preferred_map_path).to eq(helper.map_v2_path)
+      end
+    end
+
+    context 'when user is signed in' do
+      let(:user) { create(:user) }
+
+      before do
+        allow(helper).to receive(:user_signed_in?).and_return(true)
+        allow(helper).to receive(:current_user).and_return(user)
+      end
+
+      context 'when user has no preferred_version set' do
+        before do
+          user.settings['maps'] = { 'distance_unit' => 'km' }
+          user.save
+        end
+
+        it 'returns map_v2_path as the default' do
+          expect(helper.preferred_map_path).to eq(helper.map_v2_path)
+        end
+      end
+
+      context 'when user has preferred_version set to v1' do
+        before do
+          user.settings['maps'] = { 'preferred_version' => 'v1', 'distance_unit' => 'km' }
+          user.save
+        end
+
+        it 'returns map_v1_path' do
+          expect(helper.preferred_map_path).to eq(helper.map_v1_path)
+        end
+      end
+
+      context 'when user has preferred_version set to v2' do
+        before do
+          user.settings['maps'] = { 'preferred_version' => 'v2', 'distance_unit' => 'km' }
+          user.save
+        end
+
+        it 'returns map_v2_path' do
+          expect(helper.preferred_map_path).to eq(helper.map_v2_path)
+        end
+      end
+
+      context 'when user has no maps settings at all' do
+        before do
+          user.settings.delete('maps')
+          user.save
+        end
+
+        it 'returns map_v2_path as the default' do
+          expect(helper.preferred_map_path).to eq(helper.map_v2_path)
+        end
+      end
+
+      context 'when called with query params' do
+        let(:params) { { start_at: '2025-01-01T00:00', end_at: '2025-12-31T23:59' } }
+
+        context 'when preferred version is v1' do
+          before do
+            user.settings['maps'] = { 'preferred_version' => 'v1' }
+            user.save
+          end
+
+          it 'returns map_v1_path with query params' do
+            expect(helper.preferred_map_path(params)).to eq(helper.map_v1_path(params))
+          end
+        end
+
+        context 'when preferred version is v2' do
+          before do
+            user.settings['maps'] = { 'preferred_version' => 'v2' }
+            user.save
+          end
+
+          it 'returns map_v2_path with query params' do
+            expect(helper.preferred_map_path(params)).to eq(helper.map_v2_path(params))
+          end
+        end
+      end
+    end
+  end
+end

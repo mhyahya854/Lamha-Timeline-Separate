@@ -1,0 +1,70 @@
+# frozen_string_literal: true
+
+class Points::Params
+  attr_reader :data, :points, :user_id
+
+  def initialize(json, user_id)
+    @data = json.with_indifferent_access
+    @points = @data[:locations]
+    @user_id = user_id
+  end
+
+  def call
+    points.map do |point|
+      next unless params_valid?(point)
+
+      altitude_value = point[:properties][:altitude]
+
+      attrs = {
+        lonlat: lonlat(point),
+        battery_status:     point[:properties][:battery_state],
+        battery:            battery_level(point[:properties][:battery_level]),
+        timestamp:          DateTime.parse(point[:properties][:timestamp]),
+        altitude:           altitude_value,
+        tracker_id:         point[:properties][:device_id],
+        velocity:           point[:properties][:speed],
+        ssid:               point[:properties][:wifi],
+        accuracy:           point[:properties][:horizontal_accuracy],
+        vertical_accuracy:  point[:properties][:vertical_accuracy],
+        course_accuracy:    column_safe_decimal(point[:properties][:course_accuracy]),
+        course:             column_safe_decimal(point[:properties][:course]),
+        motion_data:        Points::MotionDataExtractor.from_overland_properties(point[:properties]),
+        raw_data:           point,
+        user_id:            user_id
+      }
+      attrs[:altitude_decimal] = altitude_value if Point.altitude_decimal_supported?
+      attrs
+    end.compact
+  end
+
+  private
+
+  COURSE_COLUMN_LIMIT = 1000
+
+  def battery_level(level)
+    value = (level.to_f * 100).to_i
+
+    value.positive? ? value : nil
+  end
+
+  def column_safe_decimal(value)
+    return nil if value.nil?
+
+    number = Float(value, exception: false)
+    return nil if number.nil? || !number.finite? || number.abs >= COURSE_COLUMN_LIMIT
+
+    value
+  end
+
+  def params_valid?(point)
+    coordinates = point.dig(:geometry, :coordinates)
+
+    coordinates.present? &&
+      point.dig(:properties, :timestamp).present? &&
+      !Points::NullIsland.coordinates?(coordinates[0], coordinates[1])
+  end
+
+  def lonlat(point)
+    "POINT(#{point[:geometry][:coordinates][0]} #{point[:geometry][:coordinates][1]})"
+  end
+end

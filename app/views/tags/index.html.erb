@@ -1,0 +1,77 @@
+<div class="w-full my-5">
+  <%= render layout: 'shared/page_header', locals: { title: 'Tags' } do %>
+    <%= link_to new_tag_path, class: "btn btn-primary btn-sm" do %>
+      <%= icon 'circle-plus', class: 'w-4 h-4' %> New Tag
+    <% end %>
+  <% end %>
+
+  <% if @tags.any? %>
+    <div class="border border-base-300 rounded-xl overflow-x-auto">
+      <table class="table table-sm w-full">
+        <thead class="bg-base-200">
+          <tr>
+            <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50 w-16">Icon</th>
+            <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50">Name</th>
+            <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50">Color</th>
+            <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50 text-right">Places</th>
+            <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @tags.each do |tag| %>
+            <tr class="hover:bg-base-200/50 transition-colors">
+              <td class="px-4 py-3 text-2xl"><%= tag.icon %></td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">#<%= tag.name %></span>
+                  <% if tag.privacy_zone? %>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-error/10 text-error">
+                      <%= icon 'lock-open', class: "w-3 h-3" %> <%= tag.privacy_radius_meters %>m
+                    </span>
+                  <% end %>
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <% if tag.color.present? %>
+                  <div class="flex items-center gap-2">
+                    <div class="w-5 h-5 rounded-md border border-base-300" style="background-color: <%= tag.color %>;"></div>
+                    <span class="text-xs text-base-content/50 font-mono"><%= tag.color %></span>
+                  </div>
+                <% else %>
+                  <span class="text-base-content/30 text-sm">--</span>
+                <% end %>
+              </td>
+              <td class="px-4 py-3 text-right tabular-nums"><%= tag.places.size %></td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex gap-1 justify-end">
+                  <div class="tooltip" data-tip="Edit tag">
+                    <%= link_to edit_tag_path(tag), class: "btn btn-ghost btn-xs" do %>
+                      <%= icon 'square-pen', class: 'w-4 h-4' %>
+                    <% end %>
+                  </div>
+                  <div class="tooltip tooltip-left" data-tip="Delete tag">
+                    <%= button_to tag_path(tag), method: :delete,
+                        data: { turbo_confirm: "Are you sure?", turbo_method: :delete },
+                        class: "btn btn-ghost btn-xs text-error hover:bg-error/10" do %>
+                      <%= icon 'trash-2', class: 'w-4 h-4' %>
+                    <% end %>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="text-center py-16 px-8 bg-base-200 rounded-xl border-2 border-dashed border-base-300">
+      <h3 class="text-xl font-bold mb-3">No tags yet</h3>
+      <p class="text-base-content/50 mb-6 max-w-sm mx-auto">
+        Create tags to organize your places and add privacy zones.
+      </p>
+      <%= link_to new_tag_path, class: 'btn btn-primary' do %>
+        <%= icon 'circle-plus', class: 'w-4 h-4' %> Create your first tag
+      <% end %>
+    </div>
+  <% end %>
+</div>

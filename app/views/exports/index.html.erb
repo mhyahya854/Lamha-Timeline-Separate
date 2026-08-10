@@ -1,0 +1,44 @@
+<% content_for :title, "Exports" %>
+
+<div class="w-full my-5">
+  <%= render 'shared/page_header', title: 'Exports' %>
+
+  <div id="exports" class="min-w-full">
+    <% if @exports.empty? %>
+      <div class="text-center py-16 px-8 bg-base-200 rounded-xl border-2 border-dashed border-base-300">
+        <h3 class="text-xl font-bold mb-3">No exports yet</h3>
+        <p class="text-base-content/50 mb-6 max-w-sm mx-auto">
+          Exports are created from the <%= link_to 'Points', points_url, class: 'link link-primary' %> page. Select a date range and export to GeoJSON or GPX.
+        </p>
+        <%= link_to points_url, class: 'btn btn-primary' do %>
+          <%= icon 'map-pin', class: 'w-4 h-4' %> Go to Points
+        <% end %>
+      </div>
+    <% else %>
+      <div class="flex justify-center mb-4">
+        <%= paginate @exports %>
+      </div>
+      <div class="border border-base-300 rounded-xl overflow-x-auto">
+        <table class="table w-full">
+          <thead class="bg-base-200">
+            <tr>
+              <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50 w-[40%]"><%= sortable_column 'Name', :name, :exports_path %></th>
+              <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50 w-[12%]"><%= sortable_column 'File size', :byte_size, :exports_path %></th>
+              <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50 w-[15%]"><%= sortable_column 'Status', :status, :exports_path %></th>
+              <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50 w-[20%]"><%= sortable_column 'Created', :created_at, :exports_path %></th>
+              <th class="px-4 py-3 text-xs uppercase tracking-wider text-base-content/50 text-right w-[13%]">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @exports.each do |export| %>
+              <%= render 'exports/table_row', export: export %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex justify-center mt-4">
+        <%= paginate @exports %>
+      </div>
+    <% end %>
+  </div>
+</div>
