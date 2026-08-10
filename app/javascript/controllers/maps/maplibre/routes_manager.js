@@ -327,46 +327,6 @@ export class RoutesManager {
   }
 
   /**
-   * Toggle fog of war layer
-   */
-  async toggleFog(event) {
-    const toggle = event.target
-    const fogLayer = this.layerManager.getLayer("fog")
-
-    const showFog = async () => {
-      if (fogLayer?.mode === "hexagons") {
-        fogLayer.toggle(true)
-        return
-      }
-      await this.controller.mapDataManager.ensurePointsLoaded()
-      if (fogLayer) fogLayer.toggle(true)
-    }
-
-    const hideFog = () => {
-      if (fogLayer) fogLayer.toggle(false)
-    }
-
-    const intercepted = gatedToggle({
-      layerName: "Fog of War",
-      userPlan: this.controller.userPlanValue,
-      toggle,
-      showFn: showFog,
-      hideFn: hideFog,
-      upgradeUrl: this.controller.upgradeUrlValue,
-    })
-    if (intercepted) return
-
-    const enabled = toggle.checked
-    SettingsManager.updateSetting("fogEnabled", enabled)
-
-    if (enabled) {
-      await showFog()
-    } else {
-      hideFog()
-    }
-  }
-
-  /**
    * Toggle scratch map layer
    */
   async toggleScratch(event) {

@@ -11,7 +11,6 @@ RSpec.describe Users::SafeSettings do
       it 'returns default configuration' do
         expect(safe_settings.config).to eq(
           {
-            fog_of_war_meters: 50,
             meters_between_routes: 500,
             preferred_map_layer: 'OpenStreetMap',
             speed_colored_routes: false,
@@ -33,8 +32,6 @@ RSpec.describe Users::SafeSettings do
             distance_unit: 'km',
             visits_suggestions_enabled: true,
             speed_color_scale: nil,
-            fog_of_war_threshold: 50,
-          fog_of_war_mode: 'points',
             enabled_map_layers: %w[Tracks Heatmap],
             maps_maplibre_style: 'light',
             maps_maplibre_tiles_url: nil,
@@ -84,7 +81,6 @@ RSpec.describe Users::SafeSettings do
     context 'with custom values' do
       let(:settings) do
         {
-          'fog_of_war_meters' => 100,
           'meters_between_routes' => 1000,
           'preferred_map_layer' => 'Satellite',
           'speed_colored_routes' => true,
@@ -108,9 +104,6 @@ RSpec.describe Users::SafeSettings do
       it 'returns custom configuration' do
         expect(safe_settings.settings).to eq(
           {
-            'fog_of_war_meters' => 100,
-            'fog_of_war_threshold' => 50,
-          'fog_of_war_mode' => 'points',
             'meters_between_routes' => 1000,
             'preferred_map_layer' => 'Satellite',
             'speed_colored_routes' => true,
@@ -185,7 +178,6 @@ RSpec.describe Users::SafeSettings do
       it 'returns custom config configuration' do
         expect(safe_settings.config).to eq(
           {
-            fog_of_war_meters: 100,
             meters_between_routes: 1000,
             preferred_map_layer: 'Satellite',
             speed_colored_routes: true,
@@ -207,8 +199,6 @@ RSpec.describe Users::SafeSettings do
             distance_unit: 'km',
             visits_suggestions_enabled: false,
             speed_color_scale: nil,
-            fog_of_war_threshold: 50,
-          fog_of_war_mode: 'points',
             enabled_map_layers: %w[Points Routes Areas Photos],
             maps_maplibre_style: 'light',
             maps_maplibre_tiles_url: nil,
@@ -291,7 +281,6 @@ RSpec.describe Users::SafeSettings do
       let(:settings) { {} }
 
       it 'returns default values for each setting' do
-        expect(safe_settings.fog_of_war_meters).to eq(50)
         expect(safe_settings.meters_between_routes).to eq(500)
         expect(safe_settings.preferred_map_layer).to eq('OpenStreetMap')
         expect(safe_settings.speed_colored_routes).to be false
@@ -315,7 +304,6 @@ RSpec.describe Users::SafeSettings do
     context 'with custom values' do
       let(:settings) do
         {
-          'fog_of_war_meters' => 100,
           'meters_between_routes' => 1000,
           'preferred_map_layer' => 'Satellite',
           'speed_colored_routes' => true,
@@ -331,12 +319,11 @@ RSpec.describe Users::SafeSettings do
           'photoprism_api_key' => 'photoprism-key',
           'maps' => { 'name' => 'custom', 'url' => 'https://custom.example.com' },
           'visits_suggestions_enabled' => false,
-          'enabled_map_layers' => ['Points', 'Tracks', 'Fog of War', 'Suggested Visits']
+          'enabled_map_layers' => ['Points', 'Tracks', 'Suggested Visits']
         }
       end
 
       it 'returns custom values for each setting' do
-        expect(safe_settings.fog_of_war_meters).to eq(100)
         expect(safe_settings.meters_between_routes).to eq(1000)
         expect(safe_settings.preferred_map_layer).to eq('Satellite')
         expect(safe_settings.speed_colored_routes).to be true
@@ -353,7 +340,7 @@ RSpec.describe Users::SafeSettings do
         expect(safe_settings.maps).to eq({ 'distance_unit' => 'km', 'name' => 'custom',
 'url' => 'https://custom.example.com' })
         expect(safe_settings.visits_suggestions_enabled?).to be false
-        expect(safe_settings.enabled_map_layers).to eq(['Points', 'Tracks', 'Fog of War', 'Suggested Visits'])
+        expect(safe_settings.enabled_map_layers).to eq(['Points', 'Tracks', 'Suggested Visits'])
       end
     end
   end
@@ -417,7 +404,7 @@ RSpec.describe Users::SafeSettings do
   describe 'plan-aware filtering' do
     describe '#enabled_map_layers' do
       context 'when plan is lite' do
-        let(:settings) { { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Fog of War', 'Scratch map', 'Points'] } }
+        let(:settings) { { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Scratch map', 'Points'] } }
         let(:safe_settings) { described_class.new(settings, plan: :lite) }
 
         it 'excludes gated layers' do
@@ -426,7 +413,7 @@ RSpec.describe Users::SafeSettings do
       end
 
       context 'when plan is lite and only gated layers are enabled' do
-        let(:settings) { { 'enabled_map_layers' => ['Heatmap', 'Fog of War', 'Scratch map'] } }
+        let(:settings) { { 'enabled_map_layers' => ['Heatmap', 'Scratch map'] } }
         let(:safe_settings) { described_class.new(settings, plan: :lite) }
 
         it 'returns empty array' do
@@ -435,29 +422,29 @@ RSpec.describe Users::SafeSettings do
       end
 
       context 'when plan is pro' do
-        let(:settings) { { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Fog of War', 'Scratch map'] } }
+        let(:settings) { { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Scratch map'] } }
         let(:safe_settings) { described_class.new(settings, plan: :pro) }
 
         it 'returns all layers as stored' do
-          expect(safe_settings.enabled_map_layers).to eq(['Tracks', 'Heatmap', 'Fog of War', 'Scratch map'])
+          expect(safe_settings.enabled_map_layers).to eq(['Tracks', 'Heatmap', 'Scratch map'])
         end
       end
 
       context 'when plan is pro (self-hosted users always have pro)' do
-        let(:settings) { { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Fog of War'] } }
+        let(:settings) { { 'enabled_map_layers' => ['Tracks', 'Heatmap'] } }
         let(:safe_settings) { described_class.new(settings, plan: :pro) }
 
         it 'returns all layers as stored' do
-          expect(safe_settings.enabled_map_layers).to eq(['Tracks', 'Heatmap', 'Fog of War'])
+          expect(safe_settings.enabled_map_layers).to eq(['Tracks', 'Heatmap'])
         end
       end
 
       context 'when plan is nil (backward compat)' do
-        let(:settings) { { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Fog of War'] } }
+        let(:settings) { { 'enabled_map_layers' => ['Tracks', 'Heatmap'] } }
         let(:safe_settings) { described_class.new(settings) }
 
         it 'returns all layers as stored' do
-          expect(safe_settings.enabled_map_layers).to eq(['Tracks', 'Heatmap', 'Fog of War'])
+          expect(safe_settings.enabled_map_layers).to eq(['Tracks', 'Heatmap'])
         end
       end
     end
@@ -874,24 +861,6 @@ RSpec.describe Users::SafeSettings do
       expect(described_class.new({ 'visit_density_fill_enabled' => false }).visit_density_fill_enabled?).to be false
     end
   end
-  describe '#fog_of_war_mode' do
-    it 'defaults to points' do
-      expect(described_class.new.fog_of_war_mode).to eq('points')
-    end
-
-    it 'returns hexagons when set' do
-      expect(described_class.new({ 'fog_of_war_mode' => 'hexagons' }).fog_of_war_mode).to eq('hexagons')
-    end
-
-    it 'falls back to points for invalid values' do
-      expect(described_class.new({ 'fog_of_war_mode' => 'octagons' }).fog_of_war_mode).to eq('points')
-    end
-
-    it 'is included in config' do
-      expect(described_class.new.config[:fog_of_war_mode]).to eq('points')
-    end
-  end
-
   describe '#maps_maplibre_custom_theme' do
     let(:noir_tokens) do
       {

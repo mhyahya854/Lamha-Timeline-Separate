@@ -113,7 +113,6 @@ Feel free to change them in the account settings.
   - Heatmap
   - Points
   - Lines between points
-  - Fog of War
 
 ### Family Sharing
 - Share your location with family members.

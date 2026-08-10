@@ -19,7 +19,6 @@ RSpec.describe Api::UserSerializer do
       settings = serializer[:user][:settings]
       expect(settings).to include(
         :maps,
-        :fog_of_war_meters,
         :meters_between_routes,
         :preferred_map_layer,
         :speed_colored_routes,
@@ -32,15 +31,13 @@ RSpec.describe Api::UserSerializer do
         :immich_url,
         :photoprism_url,
         :visits_suggestions_enabled,
-        :speed_color_scale,
-        :fog_of_war_threshold
+        :speed_color_scale
       )
     end
 
     context 'with custom settings' do
       let(:custom_settings) do
         {
-          'fog_of_war_meters' => 123,
           'meters_between_routes' => 456,
           'preferred_map_layer' => 'Satellite',
           'speed_colored_routes' => true,
@@ -54,7 +51,6 @@ RSpec.describe Api::UserSerializer do
           'photoprism_url' => 'https://photoprism.example.com',
           'visits_suggestions_enabled' => 'false',
           'speed_color_scale' => 'rainbow',
-          'fog_of_war_threshold' => 5,
           'maps' => { 'distance_unit' => 'mi' }
         }
       end
@@ -63,7 +59,6 @@ RSpec.describe Api::UserSerializer do
 
       it 'serializes custom settings correctly' do
         settings = serializer[:user][:settings]
-        expect(settings[:fog_of_war_meters]).to eq(123)
         expect(settings[:meters_between_routes]).to eq(456)
         expect(settings[:preferred_map_layer]).to eq('Satellite')
         expect(settings[:speed_colored_routes]).to eq(true)
@@ -77,7 +72,6 @@ RSpec.describe Api::UserSerializer do
         expect(settings[:photoprism_url]).to eq('https://photoprism.example.com')
         expect(settings[:visits_suggestions_enabled]).to eq(false)
         expect(settings[:speed_color_scale]).to eq('rainbow')
-        expect(settings[:fog_of_war_threshold]).to eq(5)
         expect(settings[:maps]).to eq({ 'distance_unit' => 'mi' })
       end
     end

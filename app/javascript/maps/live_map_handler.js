@@ -18,7 +18,6 @@ export class LiveMapHandler {
     this.markersLayer = layers.markersLayer
     this.polylinesLayer = layers.polylinesLayer
     this.heatmapLayer = layers.heatmapLayer
-    this.fogOverlay = layers.fogOverlay
 
     // Data arrays - can be initialized with existing data
     this.markers = options.existingMarkers || []
@@ -31,8 +30,6 @@ export class LiveMapHandler {
     this.timezone = options.timezone || "UTC"
     this.distanceUnit = options.distanceUnit || "km"
     this.userSettings = options.userSettings || {}
-    this.clearFogRadius = options.clearFogRadius || 100
-    this.fogLineThreshold = options.fogLineThreshold || 10
 
     // State tracking
     this.isEnabled = false
@@ -103,9 +100,6 @@ export class LiveMapHandler {
 
     // Pan map to new location
     this.map.setView([newPoint[0], newPoint[1]], 16)
-
-    // Update fog of war if enabled
-    this._updateFogOfWar()
 
     // Update the last marker efficiently
     this._updateLastMarker()
@@ -224,18 +218,6 @@ export class LiveMapHandler {
 
       // Add only the new segment instead of recreating all polylines
       this.polylinesLayer.addLayer(newSegment)
-    }
-  }
-
-  /**
-   * Update fog of war if enabled
-   * @private
-   */
-  _updateFogOfWar() {
-    if (this.map.hasLayer(this.fogOverlay)) {
-      // This would need to be implemented based on the existing fog logic
-      // For now, we'll just log that it needs updating
-      console.log("LiveMapHandler: Fog of war update needed")
     }
   }
 

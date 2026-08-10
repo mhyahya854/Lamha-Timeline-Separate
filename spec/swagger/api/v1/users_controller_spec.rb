@@ -30,7 +30,6 @@ describe 'Users API', type: :request do
                        type: :object,
                        properties: {
                          maps: { type: :object },
-                         fog_of_war_meters: { type: :integer },
                          meters_between_routes: { type: :integer },
                          preferred_map_layer: { type: :string },
                          speed_colored_routes: { type: :boolean },
@@ -43,8 +42,7 @@ describe 'Users API', type: :request do
                          immich_url: { type: :string, nullable: true },
                          photoprism_url: { type: :string, nullable: true },
                          visits_suggestions_enabled: { type: :boolean },
-                         speed_color_scale: { type: :string, nullable: true },
-                         fog_of_war_threshold: { type: :integer }
+                         speed_color_scale: { type: :string, nullable: true }
                        }
                      },
                      admin: { type: :boolean }

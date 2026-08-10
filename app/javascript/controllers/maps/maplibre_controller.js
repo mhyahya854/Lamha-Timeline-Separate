@@ -48,8 +48,6 @@ export default class extends Controller {
     "routeOpacityRange",
     "placesFilters",
     "enableAllPlaceTagsToggle",
-    "fogRadiusValue",
-    "fogThresholdValue",
     "metersBetweenValue",
     "minutesBetweenValue",
     "minMinutesInCityValue",
@@ -69,7 +67,6 @@ export default class extends Controller {
     "photosToggle",
     "areasToggle",
     "placesToggle",
-    "fogToggle",
     "scratchToggle",
     "anomaliesToggle",
     "familyToggle",
@@ -1242,12 +1239,6 @@ export default class extends Controller {
   updateAdvancedSettings(event) {
     return this.settingsController.updateAdvancedSettings(event)
   }
-  updateFogRadiusDisplay(event) {
-    return this.settingsController.updateFogRadiusDisplay(event)
-  }
-  updateFogThresholdDisplay(event) {
-    return this.settingsController.updateFogThresholdDisplay(event)
-  }
   updateMetersBetweenDisplay(event) {
     return this.settingsController.updateMetersBetweenDisplay(event)
   }
@@ -1410,13 +1401,6 @@ export default class extends Controller {
   }
   toggleHexagons(event) {
     return this.routesManager.toggleHexagons(event)
-  }
-  updateFogMode(event) {
-    return this.settingsController.updateFogMode(event)
-  }
-
-  toggleFog(event) {
-    return this.routesManager.toggleFog(event)
   }
   toggleScratch(event) {
     return this.routesManager.toggleScratch(event)

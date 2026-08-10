@@ -25,8 +25,8 @@ bootstrap run. Status as of that run and the follow-up push retry:
 - Bootstrap run: repository initialized, baseline committed locally, initial push BLOCKED
   (missing GitHub `workflow` scope for OAuth token)
 - Bootstrap completion run: baseline push retried and **succeeded**; `origin/main` at `515de12`
-- No source code changed; no strip task performed
-- `## Next Task`: `STRIP-001` (see below)
+- STRIP-001 (Remove Fog of War): completed, committed, pushed; see record below
+- `## Next Task`: `STRIP-002` (see below)
 
 ## Removal Queue (ordered)
 
@@ -36,7 +36,7 @@ stays bootable and retained location-history capabilities stay testable througho
 
 | ID | Task | Boundary notes | Status |
 | --- | --- | --- | --- |
-| STRIP-001 | Remove Fog of War | Remove feature controllers/views/routes/services/models/tests and settings surface. No KEEP dependency. | pending |
+| STRIP-001 | Remove Fog of War | Remove feature controllers/views/routes/services/models/tests and settings surface. No KEEP dependency. | [x] |
 | STRIP-002 | Remove Family Sharing subsystem | Family accounts, memberships, invitations, location requests/sharing, family locations API, shared digests/stats for family. Keep nothing from family model. | pending |
 | STRIP-003 | Remove Overland live-tracking endpoint | `api/v1/overland` batches controller + routes + tests. Live tracking is rejected. | pending |
 | STRIP-004 | Remove OwnTracks live-tracking endpoint and import pipeline | `api/v1/owntracks` points endpoint, OwnTracks import service/UI references. Google Timeline import must remain untouched. | pending |
@@ -60,7 +60,97 @@ stays bootable and retained location-history capabilities stay testable througho
 
 ## Completed Tasks
 
-None yet.
+- STRIP-001 Remove Fog of War (2026-08-10)
+
+## Completed Task
+
+* Task ID: STRIP-001
+* Task name: Remove Fog of War
+
+## Removed
+
+* `app/services/maps/fog_hexagons.rb` (fog-only H3 service)
+* `Api::V1::Maps::HexagonsController#fog` action + `parse_fog_date!`; `get :fog` route removed
+* Fog settings surface: `Users::SafeSettings` fog defaults/config/accessors, `FOG_OF_WAR_MODES`,
+  `GATED_MAP_LAYERS` entry; API settings permit list; `Api::UserSerializer` fog fields;
+  `Api::V1::PlanController` `fog_of_war` feature flags
+* `db/migrate/20240630093005_add_fog_of_war_to_default_settings.rb` and
+  `db/data/20240625201842_add_fog_of_war_meters_to_settings.rb` (fog-only migrations)
+* Frontend: `maps/fog_of_war.js`, `maps_maplibre/layers/fog_layer.js`,
+  `maps_maplibre/layers/fog_hexagon_source.js`, Leaflet and MapLibre fog wiring
+  (controllers, layer manager, data loader, routes manager, settings managers, API client
+  `fetchFogHexagons`, lazy loader entry), fog UI in `_settings_panel.html.erb`,
+  `_settings_modals.html.erb`, `index.html.erb`, cloud-fog icon
+* Specs: `spec/services/maps/fog_hexagons_spec.rb`, fog request/swagger tests, fog factory key,
+  fog assertions in safe_settings/serializer/settings/users/transportation specs
+* `swagger/v1/swagger.yaml` fog endpoint + settings/plan fog schemas; docs mentions in
+  README/CLAUDE/app JS README and archival mailer views
+
+## Preserved
+
+* Hexagon `index`/`bounds` API actions and shared `Maps::HexagonRequestHandler` /
+  `Maps::BoundsCalculator` (heatmap/scratch-map usage) — kept intact
+* All KEEP location-history capabilities untouched: Google Timeline import, cleanup/
+  normalization/deduplication, reverse geocoding, visit/place detection, routes, stats,
+  trip geography; no retained code references fog settings or endpoints
+
+## Files Changed
+
+49 files: 8 deleted, 41 modified (see commit diff; all changes fog-scoped)
+
+## Validation Executed
+
+* `npx --yes prettier@3.6.2 --check <14 modified JS files>` — WARN (style only) on all 14;
+  baseline HEAD versions fail identically, so warnings are pre-existing; no syntax errors
+* `node --input-type=module --check <14 modified JS files>` — PASS (all parse)
+* `node --test spec/javascript/*_test.mjs` — PASS 64/64 (settings manager tests included)
+* `python yaml.safe_load swagger/v1/swagger.yaml` — PASS; 64 paths, no fog references
+* `git diff --check` — PASS
+* Ruby checks (`bundle exec rspec`, `bundle exec rubocop`, `rails runner`/`rails routes`,
+  `rails db:migrate`) — NOT RUN: environment has no Ruby/Bundler/Postgres/Docker;
+  Ruby edits reviewed manually via `git diff`
+
+## Repository Search
+
+* `rg -i fog` across `app/ db/ config/ spec/ swagger/` — no matches
+* `rg` for fog symbols (`fogEnabled`, `fogOfWar*`, `FogLayer`, `FogHexagons`, `fetchFogHexagons`,
+  `fogOverlay`, `updateFog`, `fog_of_war*`, `cloud-fog`, migration timestamps) — no matches
+* Intentional surviving references: `config/shared_link_wordlist.txt` (generic wordlist word),
+  `CHANGELOG.md` (historical release notes), scope/progress planning docs
+
+## Database Impact
+
+* No table/column/constraint changes. `db/schema.rb` `users.settings` default dropped
+  `"fog_of_war_meters" => "100"`; fog-only schema/data migrations deleted. Chain integrity:
+  existing installs already recorded those versions in `schema_migrations`; fresh installs no
+  longer apply them (no retained code references fog keys). Existing rows may retain inert
+  `fog_of_war_*` keys in the settings JSON — harmless and intentionally not scrubbed
+
+## Decisions
+
+* Shared hexagon controller `index`/`bounds` and their services are retained (heatmap/scratch
+  map depend on them); only the fog action/route/service were removed
+* Historical fog migrations deleted instead of preserved with a forward migration because they
+  are exclusively fog-feature (settings JSON default + backfill), no KEEP capability depends on
+  them, and neither fresh nor existing migration chains break; schema.rb updated to match
+* CHANGELOG entries kept as historical record; generic wordlist/vendor files untouched
+* Environment lacks Ruby/Postgres tooling, so Rails-side execution was replaced by manual diff
+  review plus Node/Prettier/YAML checks; later runs with a Ruby environment should run the
+  full suite
+
+## Blockers
+
+* None (validation limits from missing Ruby/Postgres tooling documented above, not blockers)
+
+## Commit
+
+* Filled after commit
+
+## Push
+
+* remote: origin (`https://github.com/mhyahya854/Lamha-Timeline-Separate.git`)
+* branch: main
+* result: filled after push
 
 ## Decisions
 
@@ -86,4 +176,4 @@ None yet.
 
 ## Next Task
 
-`STRIP-001` — Remove Fog of War
+`STRIP-002` — Remove Family Sharing subsystem

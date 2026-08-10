@@ -72,12 +72,12 @@ class Api::V1::SettingsController < ApiController
   def settings_params
     permitted = params.require(:settings).permit(
       :timezone,
-      :meters_between_routes, :minutes_between_routes, :fog_of_war_meters,
+      :meters_between_routes, :minutes_between_routes,
       :time_threshold_minutes, :merge_threshold_minutes, :route_opacity,
       :route_color, :track_color,
       :preferred_map_layer, :points_rendering_mode, :live_map_enabled,
       :immich_url, :immich_api_key, :photoprism_url, :photoprism_api_key,
-      :speed_colored_routes, :speed_color_scale, :fog_of_war_threshold, :fog_of_war_mode,
+      :speed_colored_routes, :speed_color_scale,
       :maps_v2_style, :maps_maplibre_style, :maps_maplibre_tiles_url, :globe_projection,
       :transportation_expert_mode,
       :min_minutes_spent_in_city, :max_gap_minutes_in_city,

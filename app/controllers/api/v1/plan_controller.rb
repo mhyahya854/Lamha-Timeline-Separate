@@ -19,13 +19,13 @@ class Api::V1::PlanController < ApiController
   private
 
   def full_features
-    { heatmap: true, fog_of_war: true, scratch_map: true,
+    { heatmap: true, scratch_map: true,
       globe_view: true, integrations: true, write_api: true,
       sharing: true, full_digest: true, data_window: nil }
   end
 
   def lite_features
-    { heatmap: false, fog_of_war: false, scratch_map: false,
+    { heatmap: false, scratch_map: false,
       globe_view: false, integrations: false, write_api: :create_only,
       sharing: false, full_digest: false, data_window: '12_months' }
   end

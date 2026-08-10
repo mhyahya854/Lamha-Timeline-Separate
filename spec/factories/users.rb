@@ -16,7 +16,6 @@ FactoryBot.define do
         'route_opacity' => 60,
         'meters_between_routes' => '500',
         'minutes_between_routes' => '30',
-        'fog_of_war_meters' => '100',
         'time_threshold_minutes' => '30',
         'merge_threshold_minutes' => '15',
         'maps' => {

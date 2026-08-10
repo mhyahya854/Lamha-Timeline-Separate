@@ -182,7 +182,6 @@ app/javascript/
 │   │   ├── photos_layer.js     # Photo markers
 │   │   ├── places_layer.js     # Places markers
 │   │   ├── areas_layer.js      # User-defined areas
-│   │   ├── fog_layer.js        # Fog of war overlay
 │   │   └── scratch_layer.js    # Scratch map
 │   ├── services/               # API and external services
 │   │   ├── api_client.js       # REST API wrapper
@@ -293,7 +292,6 @@ Layers are rendered in specific order (bottom to top):
 8. **Photos Layer** - Photos with geolocation
 9. **Family Layer** - Real-time family member locations
 10. **Points Layer** - Individual location points
-11. **Fog Layer** - Canvas overlay showing unexplored areas
 
 ### BaseLayer Pattern
 
@@ -345,7 +343,6 @@ Heavy layers are lazy-loaded to reduce initial bundle size:
 ```javascript
 // In lazy_loader.js
 const paths = {
-  'fog': () => import('../layers/fog_layer.js'),
   'scratch': () => import('../layers/scratch_layer.js')
 }
 

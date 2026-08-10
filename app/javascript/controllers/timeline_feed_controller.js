@@ -315,7 +315,7 @@ export default class extends Controller {
 
   // ---------- Calendar ----------
   // User-facing actions trigger a full Turbo navigation so the whole map
-  // page (points / routes / fog-of-war / any enabled layer) rebinds to the
+  // page (points / routes / any enabled layer) rebinds to the
   // new date range — consistent with the existing top-of-page date form.
   selectDay(event) {
     const cell = event.currentTarget

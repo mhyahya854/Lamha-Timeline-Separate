@@ -2,7 +2,7 @@
  * Layer gating utility for Lite plan users.
  *
  * Provides timed preview behavior for Pro-only map layers (heatmap,
- * fog-of-war, scratch map, globe). When a Lite user toggles a gated
+ * scratch map, globe). When a Lite user toggles a gated
  * layer, it shows for PREVIEW_SECONDS then auto-hides with an upgrade
  * prompt.
  */

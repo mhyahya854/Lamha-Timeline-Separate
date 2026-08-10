@@ -3,14 +3,9 @@
 class Users::SafeSettings
   attr_reader :settings
 
-  GATED_MAP_LAYERS = ['Heatmap', 'Fog of War', 'Scratch map'].freeze
-
-  FOG_OF_WAR_MODES = %w[points hexagons].freeze
+  GATED_MAP_LAYERS = ['Heatmap', 'Scratch map'].freeze
 
   DEFAULT_VALUES = {
-    'fog_of_war_meters' => 50,
-    'fog_of_war_threshold' => 50,
-    'fog_of_war_mode' => 'points',
     'meters_between_routes' => 500,
     'preferred_map_layer' => 'OpenStreetMap',
     'speed_colored_routes' => false,
@@ -91,7 +86,6 @@ class Users::SafeSettings
 
   def config
     {
-      fog_of_war_meters: fog_of_war_meters,
       meters_between_routes: meters_between_routes,
       preferred_map_layer: preferred_map_layer,
       speed_colored_routes: speed_colored_routes,
@@ -113,8 +107,6 @@ class Users::SafeSettings
       distance_unit: distance_unit,
       visits_suggestions_enabled: visits_suggestions_enabled?,
       speed_color_scale: speed_color_scale,
-      fog_of_war_threshold: fog_of_war_threshold,
-      fog_of_war_mode: fog_of_war_mode,
       enabled_map_layers: enabled_map_layers,
       maps_maplibre_style: maps_maplibre_style,
       maps_maplibre_tiles_url: maps_maplibre_tiles_url,
@@ -135,10 +127,6 @@ class Users::SafeSettings
       stay_max_gap_minutes: stay_max_gap_minutes,
       point_dragging_enabled: point_dragging_enabled?
     }
-  end
-
-  def fog_of_war_meters
-    settings['fog_of_war_meters']
   end
 
   def meters_between_routes
@@ -239,15 +227,6 @@ class Users::SafeSettings
 
   def speed_color_scale
     settings['speed_color_scale']
-  end
-
-  def fog_of_war_threshold
-    settings['fog_of_war_threshold']
-  end
-
-  def fog_of_war_mode
-    value = settings['fog_of_war_mode'].to_s
-    FOG_OF_WAR_MODES.include?(value) ? value : 'points'
   end
 
   def enabled_map_layers

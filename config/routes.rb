@@ -389,7 +389,6 @@ Rails.application.routes.draw do
         resources :hexagons, only: [:index] do
           collection do
             get :bounds
-            get :fog
           end
         end
       end

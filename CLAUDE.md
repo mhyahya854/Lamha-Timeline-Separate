@@ -8,7 +8,7 @@ This file contains essential information for Claude to work effectively with the
 
 ### Key Features
 - Location history tracking and visualization
-- Interactive maps with multiple layers (heatmap, points, lines, fog of war)
+- Interactive maps with multiple layers (heatmap, points, lines)
 - Import from various sources (Google Maps Timeline, OwnTracks, Strava, GPX, GeoJSON, photos)
 - Export to GeoJSON and GPX formats
 - Statistics and analytics (countries visited, distance traveled, etc.)
@@ -453,7 +453,7 @@ Plan is stored as an integer enum on the `users` table. New cloud users start on
 - `plan_restricted?` returns `true` only when `!self_hosted? && lite?`
 
 **Disabled map layers (Pro-only):**
-- Heatmap, Fog of War, Scratch Map, Globe View
+- Heatmap, Scratch Map, Globe View
 - Lite users get a 20-second timed preview, then auto-hide with upgrade prompt
 - Gating logic: `app/javascript/maps_maplibre/utils/layer_gate.js`
 - UI components: `Toast` (countdown) and `UpgradeBanner` (post-preview CTA)

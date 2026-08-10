@@ -38,9 +38,6 @@ const DEFAULT_SETTINGS = {
   },
   enabledMapLayers: ["Heatmap", "Tracks"],
   routeOpacity: 0.6,
-  fogOfWarRadius: 50,
-  fogOfWarThreshold: 50,
-  fogOfWarMode: "points",
   metersBetweenRoutes: 500,
   minutesBetweenRoutes: 30,
   pointsRenderingMode: "raw",
@@ -93,7 +90,6 @@ const LAYER_NAME_MAP = {
   Areas: "areasEnabled",
   Tracks: "tracksEnabled",
   Flights: "flightsEnabled",
-  "Fog of War": "fogEnabled",
   "Scratch map": "scratchEnabled",
   "Family Members": "familyEnabled",
   Places: "placesEnabled",
@@ -108,9 +104,6 @@ const BACKEND_SETTINGS_MAP = {
   trackColor: "track_color",
   enabledMapLayers: "enabled_map_layers",
   routeOpacity: "route_opacity",
-  fogOfWarRadius: "fog_of_war_meters",
-  fogOfWarThreshold: "fog_of_war_threshold",
-  fogOfWarMode: "fog_of_war_mode",
   metersBetweenRoutes: "meters_between_routes",
   minutesBetweenRoutes: "minutes_between_routes",
   pointsRenderingMode: "points_rendering_mode",
@@ -287,16 +280,6 @@ export class SettingsManager {
                 value,
                 DEFAULT_SETTINGS.routeOpacity,
               )
-            } else if (frontendKey === "fogOfWarRadius") {
-              value = SettingsManager._parseIntOr(
-                value,
-                DEFAULT_SETTINGS.fogOfWarRadius,
-              )
-            } else if (frontendKey === "fogOfWarThreshold") {
-              value = SettingsManager._parseIntOr(
-                value,
-                DEFAULT_SETTINGS.fogOfWarThreshold,
-              )
             } else if (frontendKey === "metersBetweenRoutes") {
               value = SettingsManager._parseIntOr(
                 value,
@@ -417,8 +400,6 @@ export class SettingsManager {
             if (frontendKey === "routeOpacity") {
               value = parseFloat(value).toString()
             } else if (
-              frontendKey === "fogOfWarRadius" ||
-              frontendKey === "fogOfWarThreshold" ||
               frontendKey === "metersBetweenRoutes" ||
               frontendKey === "minutesBetweenRoutes" ||
               frontendKey === "minMinutesSpentInCity" ||

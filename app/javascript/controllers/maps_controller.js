@@ -32,11 +32,6 @@ import Flash from "./flash_controller"
 import "leaflet-draw"
 import { UpgradeBanner } from "maps_maplibre/components/upgrade_banner"
 import { isGatedPlan } from "maps_maplibre/utils/layer_gate"
-import {
-  createFogOverlay,
-  drawFogCanvas,
-  initializeFogCanvas,
-} from "../maps/fog_of_war"
 import { createAllMapLayers } from "../maps/layers"
 import {
   addTopRightButtons,
@@ -102,10 +97,6 @@ export default class extends BaseController {
       console.error("Error parsing features data:", error)
       this.features = {}
     }
-    this.clearFogRadius =
-      parseInt(this.userSettings.fog_of_war_meters, 10) || 50
-    this.fogLineThreshold =
-      parseInt(this.userSettings.fog_of_war_threshold, 10) || 90
     // Store route opacity as decimal (0-1) internally
     this.routeOpacity = parseFloat(this.userSettings.route_opacity) || 0.6
     this.distanceUnit = this.userSettings.maps?.distance_unit || "km"
@@ -236,9 +227,6 @@ export default class extends BaseController {
 
     // Initialize empty tracks layer for layer control (will be populated later)
     this.tracksLayer = L.layerGroup()
-
-    // Create a proper Leaflet layer for fog
-    this.fogOverlay = new (createFogOverlay())()
 
     // Create custom panes with proper z-index ordering
     // Leaflet default panes: tilePane=200, overlayPane=400, shadowPane=500, markerPane=600, tooltipPane=650, popupPane=700
@@ -446,7 +434,6 @@ export default class extends BaseController {
       markersLayer: this.markersLayer,
       polylinesLayer: this.polylinesLayer,
       heatmapLayer: this.heatmapLayer,
-      fogOverlay: this.fogOverlay,
     }
 
     const options = {
@@ -455,8 +442,6 @@ export default class extends BaseController {
       timezone: this.timezone,
       distanceUnit: this.distanceUnit,
       userSettings: this.userSettings,
-      clearFogRadius: this.clearFogRadius,
-      fogLineThreshold: this.fogLineThreshold,
       // Pass existing data to LiveMapHandler
       existingMarkers: this.markers || [],
       existingMarkersArray: this.markersArray || [],
@@ -644,10 +629,6 @@ export default class extends BaseController {
           layer: this.heatmapLayer,
         },
         {
-          label: "Fog of War",
-          layer: this.fogOverlay,
-        },
-        {
           label: "Scratch map",
           layer: this.scratchLayerManager?.getLayer() || L.layerGroup(),
         },
@@ -796,14 +777,6 @@ export default class extends BaseController {
         if (this.scratchLayerManager) {
           this.scratchLayerManager.addToMap()
         }
-      } else if (event.name === "Fog of War") {
-        // Fog of war layer re-enabled, redraw the fog
-        // Note: this.fogOverlay already holds the correct reference from initialization
-        this.updateFog(
-          this.markers || [],
-          this.clearFogRadius,
-          this.fogLineThreshold,
-        )
       }
 
       // Manage pane visibility when layers are manually toggled
@@ -900,7 +873,6 @@ export default class extends BaseController {
       Routes: this.polylinesLayer,
       Tracks: this.tracksLayer,
       Heatmap: this.heatmapLayer,
-      "Fog of War": this.fogOverlay,
       "Scratch map": this.scratchLayerManager?.getLayer(),
       Areas: this.areasLayer,
       Photos: this.photoMarkers,
@@ -1022,15 +994,6 @@ export default class extends BaseController {
           this.markers.map((marker) => [marker[0], marker[1], 0.2]),
         )
 
-        // Update fog if enabled
-        if (this.map.hasLayer(this.fogOverlay)) {
-          this.updateFog(
-            this.markers,
-            this.clearFogRadius,
-            this.fogLineThreshold,
-          )
-        }
-
         // Reset flag after a short delay so queued overlay events finish first.
         setTimeout(() => {
           this.isRestoringLayers = false
@@ -1067,22 +1030,6 @@ export default class extends BaseController {
       if (this.scratchLayerManager) {
         this.scratchLayerManager.updateMarkers(this.markers)
       }
-    }
-  }
-
-  updateFog(markers, clearFogRadius, fogLineThreshold) {
-    // Call the fog overlay's updateFog method if it exists
-    if (this.fogOverlay && typeof this.fogOverlay.updateFog === "function") {
-      this.fogOverlay.updateFog(markers, clearFogRadius, fogLineThreshold)
-    } else {
-      // Fallback for when fog overlay isn't available
-      const fog = document.getElementById("fog")
-      if (!fog) {
-        initializeFogCanvas(this.map)
-      }
-      requestAnimationFrame(() =>
-        drawFogCanvas(this.map, markers, clearFogRadius, fogLineThreshold),
-      )
     }
   }
 
@@ -1310,26 +1257,6 @@ export default class extends BaseController {
 
           <div class="form-control">
             <label class="label py-1">
-              <span class="label-text text-xs">Fog of War radius</span>
-            </label>
-            <div class="join join-horizontal w-full">
-              <input type="number" class="input input-bordered input-sm join-item flex-1" id="fog_of_war_meters" name="fog_of_war_meters" min="5" max="200" step="1" value="${this.clearFogRadius}">
-              <label for="fog_of_war_meters_info" class="btn btn-sm btn-ghost join-item cursor-pointer">?</label>
-            </div>
-          </div>
-
-          <div class="form-control">
-            <label class="label py-1">
-              <span class="label-text text-xs">Fog of War threshold</span>
-            </label>
-            <div class="join join-horizontal w-full">
-              <input type="number" class="input input-bordered input-sm join-item flex-1" id="fog_of_war_threshold" name="fog_of_war_threshold" step="1" value="${this.userSettings.fog_of_war_threshold}">
-              <label for="fog_of_war_threshold_info" class="btn btn-sm btn-ghost join-item cursor-pointer">?</label>
-            </div>
-          </div>
-
-          <div class="form-control">
-            <label class="label py-1">
               <span class="label-text text-xs">Meters between routes</span>
             </label>
             <div class="join join-horizontal w-full">
@@ -1487,8 +1414,6 @@ export default class extends BaseController {
       body: JSON.stringify({
         settings: {
           route_opacity: decimalOpacity.toString(),
-          fog_of_war_meters: event.target.fog_of_war_meters.value,
-          fog_of_war_threshold: event.target.fog_of_war_threshold.value,
           meters_between_routes: event.target.meters_between_routes.value,
           minutes_between_routes: event.target.minutes_between_routes.value,
           time_threshold_minutes: event.target.time_threshold_minutes.value,
@@ -1573,7 +1498,6 @@ export default class extends BaseController {
       this.userSettings = { ...this.userSettings, ...newSettings }
       // Store the value as decimal internally, but display as percentage in UI
       this.routeOpacity = parseFloat(newSettings.route_opacity) || 0.6
-      this.clearFogRadius = parseInt(newSettings.fog_of_war_meters, 10) || 50
       this.liveMapEnabled = newSettings.live_map_enabled || false
 
       // Update the DOM data attribute to keep it in sync
@@ -1603,7 +1527,6 @@ export default class extends BaseController {
         Routes: this.map.hasLayer(this.polylinesLayer),
         Tracks: this.tracksLayer ? this.map.hasLayer(this.tracksLayer) : false,
         Heatmap: this.map.hasLayer(this.heatmapLayer),
-        "Fog of War": this.map.hasLayer(this.fogOverlay),
         "Scratch map": this.scratchLayerManager?.isVisible() || false,
         Areas: this.map.hasLayer(this.areasLayer),
         Photos: this.map.hasLayer(this.photoMarkers),
@@ -1620,7 +1543,6 @@ export default class extends BaseController {
         Routes: this.polylinesLayer || L.layerGroup(),
         Tracks: this.tracksLayer || L.layerGroup(),
         Heatmap: this.heatmapLayer || L.heatLayer([]),
-        "Fog of War": this.fogOverlay,
         "Scratch map": this.scratchLayer || L.layerGroup(),
         Areas: this.areasLayer || L.layerGroup(),
         Photos: this.photoMarkers || L.layerGroup(),
@@ -1907,7 +1829,6 @@ export default class extends BaseController {
       Routes: this.polylinesLayer,
       Tracks: this.tracksLayer,
       Heatmap: this.heatmapLayer,
-      "Fog of War": this.fogOverlay,
       "Scratch map": this.scratchLayerManager?.getLayer(),
       Areas: this.areasLayer,
       Photos: this.photoMarkers,
@@ -1946,13 +1867,7 @@ export default class extends BaseController {
 
         // Trigger special initialization for certain layers
         // Note: Photos fetch is handled by the overlayadd event handler
-        if (name === "Fog of War") {
-          this.updateFog(
-            this.markers,
-            this.clearFogRadius,
-            this.fogLineThreshold,
-          )
-        } else if (name === "Suggested" || name === "Confirmed") {
+        if (name === "Suggested" || name === "Confirmed") {
           if (
             this.visitsManager &&
             typeof this.visitsManager.fetchAndDisplayVisits === "function"

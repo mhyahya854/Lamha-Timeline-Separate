@@ -22,7 +22,6 @@ describe 'Plan API', type: :request do
                    type: :object,
                    properties: {
                      heatmap: { type: :boolean },
-                     fog_of_war: { type: :boolean },
                      scratch_map: { type: :boolean },
                      globe_view: { type: :boolean },
                      integrations: { type: :boolean },

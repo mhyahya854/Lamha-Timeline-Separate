@@ -144,13 +144,6 @@ export class MapDataManager {
           })
       }
 
-      // 8. Reload fog hexagons if fog is visible in hexagon mode — same
-      // reasoning: they own their own fetch pipeline.
-      const fogLayer = this.layerManager.getLayer("fog")
-      if (fogLayer?.visible && fogLayer.mode === "hexagons") {
-        fogLayer.reloadHexagons()
-      }
-
       return data
     } catch (error) {
       console.error("[MapDataManager] Failed to load map data:", error)
@@ -233,11 +226,10 @@ export class MapDataManager {
       this.lastLoadedData.routesBaseGeoJSON = routesBaseGeoJSON
 
       this._updateLayerBySource("points", pointsGeoJSON)
-      // Heatmap, fog and scratch need all points
+      // Heatmap and scratch need all points
       this._updateLayerBySource("heatmap", allPointsGeoJSON)
       this._updateLayerBySource("routes", routesGeoJSON)
       this._updateLayerBySource("routes-base", routesBaseGeoJSON)
-      this._updateLayerBySource("fog", allPointsGeoJSON)
       this._updateLayerBySource("scratch", allPointsGeoJSON)
 
       this.controller.updateLoadingCounts({
@@ -273,7 +265,6 @@ export class MapDataManager {
       places: "places",
       tracks: "tracks",
       photos: "photos",
-      fog: "fog",
       scratch: "scratch",
       flights: "flights",
     }

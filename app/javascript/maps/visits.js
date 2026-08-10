@@ -546,18 +546,6 @@ export class VisitsManager {
         )
       }
 
-      // Update fog if enabled
-      if (
-        this.mapsController.fogOverlay &&
-        this.mapsController.map.hasLayer(this.mapsController.fogOverlay)
-      ) {
-        this.mapsController.updateFog(
-          this.mapsController.markers,
-          this.mapsController.clearFogRadius,
-          this.mapsController.fogLineThreshold,
-        )
-      }
-
       // Clear selection
       this.clearSelection()
     } catch (error) {
@@ -607,7 +595,6 @@ export class VisitsManager {
         Routes: this.mapsController.polylinesLayer || L.layerGroup(),
         Tracks: this.mapsController.tracksLayer || L.layerGroup(),
         Heatmap: this.mapsController.heatmapLayer || L.layerGroup(),
-        "Fog of War": this.mapsController.fogOverlay,
         "Scratch map":
           this.mapsController.scratchLayerManager?.getLayer() || L.layerGroup(),
         Areas: this.mapsController.areasLayer || L.layerGroup(),

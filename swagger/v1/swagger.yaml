@@ -2055,56 +2055,6 @@ paths:
                             description: Northeast longitude
         '401':
           description: unauthorized
-  "/api/v1/maps/hexagons/fog":
-    get:
-      summary: Retrieves fog of war hexagon cell ids
-      tags:
-      - Maps
-      description: Returns precalculated H3 cell ids covering the user's visited locations
-        within the specified date range, used by the fog of war hexagon rendering
-        mode
-      parameters:
-      - name: api_key
-        in: query
-        required: false
-        description: API Key
-        schema:
-          type: string
-      - name: start_date
-        in: query
-        required: true
-        description: Start date (ISO 8601 format)
-        schema:
-          type: string
-      - name: end_date
-        in: query
-        required: true
-        description: End date (ISO 8601 format)
-        schema:
-          type: string
-      responses:
-        '200':
-          description: cell ids found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  h3_indexes:
-                    type: array
-                    description: H3 cell ids covering visited locations
-                    items:
-                      type: string
-                  metadata:
-                    type: object
-                    properties:
-                      count:
-                        type: integer
-                        description: Number of cell ids returned
-        '400':
-          description: missing or invalid dates
-        '401':
-          description: unauthorized
   "/api/v1/notes":
     get:
       summary: List notes
@@ -3254,8 +3204,6 @@ paths:
                     properties:
                       heatmap:
                         type: boolean
-                      fog_of_war:
-                        type: boolean
                       scratch_map:
                         type: boolean
                       globe_view:
@@ -4090,10 +4038,6 @@ paths:
                   type: number
                   example: 30
                   description: Minimum time between routes in minutes
-                fog_of_war_meters:
-                  type: number
-                  example: 50
-                  description: Fog of war radius in meters
                 time_threshold_minutes:
                   type: number
                   example: 30
@@ -4138,10 +4082,6 @@ paths:
                   type: string
                   example: viridis
                   description: Color scale for speed-colored routes
-                fog_of_war_threshold:
-                  type: number
-                  example: 100
-                  description: Fog of war threshold value
                 maps:
                   type: object
                   properties:
@@ -4160,7 +4100,6 @@ paths:
                     route_opacity: 60
                     meters_between_routes: 500
                     minutes_between_routes: 30
-                    fog_of_war_meters: 50
                     time_threshold_minutes: 30
                     merge_threshold_minutes: 15
                     preferred_map_layer: OpenStreetMap
@@ -4172,7 +4111,6 @@ paths:
                     photoprism_url: https://photoprism.example.com
                     photoprism_api_key: your-photoprism-api-key
                     speed_color_scale: viridis
-                    fog_of_war_threshold: 100
                     maps:
                       distance_unit: km
     get:
@@ -4213,12 +4151,6 @@ paths:
                         - type: string
                         example: 30
                         description: Minimum time between routes in minutes
-                      fog_of_war_meters:
-                        oneOf:
-                        - type: number
-                        - type: string
-                        example: 50
-                        description: Fog of war radius in meters
                       time_threshold_minutes:
                         oneOf:
                         - type: number
@@ -4278,13 +4210,6 @@ paths:
                         - type: 'null'
                         example: viridis
                         description: Color scale for speed-colored routes
-                      fog_of_war_threshold:
-                        oneOf:
-                        - type: number
-                        - type: string
-                        - type: 'null'
-                        example: 100
-                        description: Fog of war threshold value
         '401':
           description: unauthorized
   "/api/v1/settings/transportation_recalculation_status":

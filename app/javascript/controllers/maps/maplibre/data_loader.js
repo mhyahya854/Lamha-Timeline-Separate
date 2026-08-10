@@ -141,7 +141,6 @@ export class DataLoader {
       this.settings.pointsVisible !== false ||
       this.settings.routesVisible !== false ||
       this.settings.heatmapEnabled ||
-      this.settings.fogEnabled ||
       this.settings.scratchEnabled
 
     // Register every source that will be fetched so the badge stays visible
@@ -319,9 +318,8 @@ export class DataLoader {
         onLayerData("routes-base", data.routesBaseGeoJSON)
         // Final points/heatmap update with complete dataset
         onLayerData("points", data.pointsGeoJSON)
-        // Heatmap, fog and scratch need all points
+        // Heatmap and scratch need all points
         onLayerData("heatmap", allPointsGeoJSON)
-        onLayerData("fog", allPointsGeoJSON)
         onLayerData("scratch", allPointsGeoJSON)
       }
     } else {

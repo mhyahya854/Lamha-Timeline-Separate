@@ -114,7 +114,7 @@ RSpec.describe Users::TransportationThresholdsUpdater do
       before { allow(DawarichSettings).to receive(:self_hosted?).and_return(false) }
 
       it 'strips gated layers from enabled_map_layers before saving' do
-        params = { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Fog of War', 'Scratch map', 'Points'] }
+        params = { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Scratch map', 'Points'] }
         described_class.new(user, params).call
 
         expect(user.reload.settings['enabled_map_layers']).to eq(%w[Tracks Points])
@@ -153,10 +153,10 @@ RSpec.describe Users::TransportationThresholdsUpdater do
       end
 
       it 'preserves all layers including gated ones' do
-        params = { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Fog of War', 'Scratch map'] }
+        params = { 'enabled_map_layers' => ['Tracks', 'Heatmap', 'Scratch map'] }
         described_class.new(user, params).call
 
-        expect(user.reload.settings['enabled_map_layers']).to eq(['Tracks', 'Heatmap', 'Fog of War', 'Scratch map'])
+        expect(user.reload.settings['enabled_map_layers']).to eq(['Tracks', 'Heatmap', 'Scratch map'])
       end
 
       it 'preserves globe_projection as true' do

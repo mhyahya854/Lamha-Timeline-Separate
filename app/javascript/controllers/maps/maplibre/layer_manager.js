@@ -2,7 +2,6 @@ import { AnomaliesLayer } from "maps_maplibre/layers/anomalies_layer"
 import { AreasLayer } from "maps_maplibre/layers/areas_layer"
 import { FamilyLayer } from "maps_maplibre/layers/family_layer"
 import { FlightsLayer } from "maps_maplibre/layers/flights_layer"
-import { FogLayer } from "maps_maplibre/layers/fog_layer"
 import { HeatmapLayer } from "maps_maplibre/layers/heatmap_layer"
 import { HexagonLayer } from "maps_maplibre/layers/hexagon_layer"
 import { PhotosLayer } from "maps_maplibre/layers/photos_layer"
@@ -47,7 +46,7 @@ export class LayerManager {
     performanceMonitor.mark("add-layers")
 
     // Layer order matters - layers added first render below layers added later
-    // Order: scratch (bottom) -> heatmap -> areas -> tracks -> routes (visual) -> visits -> places -> photos -> family -> points -> routes-hit (interaction) -> recent-point (top) -> fog (canvas overlay)
+    // Order: scratch (bottom) -> heatmap -> areas -> tracks -> routes (visual) -> visits -> places -> photos -> family -> points -> routes-hit (interaction) -> recent-point (top)
     // Note: routes-hit is above points visually but points dragging takes precedence via event ordering
 
     await this._addScratchLayer(pointsGeoJSON)
@@ -73,7 +72,6 @@ export class LayerManager {
     this._addRoutesHitLayer() // Add hit target layer after points, will be on top visually
     this._addRecentPointLayer()
     this._addReplayMarkerLayer()
-    this._addFogLayer(pointsGeoJSON)
 
     performanceMonitor.measure("add-layers")
   }
@@ -453,19 +451,4 @@ export class LayerManager {
     }
   }
 
-  _addFogLayer(pointsGeoJSON) {
-    // Always create fog layer for backward compatibility
-    if (!this.layers.fogLayer) {
-      this.layers.fogLayer = new FogLayer(this.map, {
-        clearRadius: this.settings.fogOfWarRadius || 1000,
-        visible: this.settings.fogEnabled || false,
-        mode: this.settings.fogOfWarMode || "points",
-        api: this.api,
-        controller: this.controller,
-      })
-      this.layers.fogLayer.add(pointsGeoJSON)
-    } else {
-      this.layers.fogLayer.update(pointsGeoJSON)
-    }
-  }
 }

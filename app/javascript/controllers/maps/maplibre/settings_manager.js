@@ -68,7 +68,6 @@ export class SettingsController {
       photosToggle: "photosEnabled",
       areasToggle: "areasEnabled",
       placesToggle: "placesEnabled",
-      fogToggle: "fogEnabled",
       scratchToggle: "scratchEnabled",
       familyToggle: "familyEnabled",
       speedColoredToggle: "speedColoredRoutes",
@@ -81,7 +80,6 @@ export class SettingsController {
     const gatedToggles = new Set([
       "heatmapToggle",
       "hexagonsToggle",
-      "fogToggle",
       "scratchToggle",
       "pointsEditToggle",
     ])
@@ -179,35 +177,6 @@ export class SettingsController {
       )
         ? false
         : this.settings.globeProjection || false
-    }
-
-    // Sync fog of war mode radio
-    const fogModeInput = controller.element.querySelector(
-      `input[name="fogOfWarMode"][value="${this.settings.fogOfWarMode || "points"}"]`,
-    )
-    if (fogModeInput) {
-      fogModeInput.checked = true
-    }
-
-    // Sync fog of war settings
-    const fogRadiusInput = controller.element.querySelector(
-      'input[name="fogOfWarRadius"]',
-    )
-    if (fogRadiusInput) {
-      fogRadiusInput.value = this.settings.fogOfWarRadius || 1000
-      if (controller.hasFogRadiusValueTarget) {
-        controller.fogRadiusValueTarget.textContent = `${fogRadiusInput.value}m`
-      }
-    }
-
-    const fogThresholdInput = controller.element.querySelector(
-      'input[name="fogOfWarThreshold"]',
-    )
-    if (fogThresholdInput) {
-      fogThresholdInput.value = this.settings.fogOfWarThreshold || 1
-      if (controller.hasFogThresholdValueTarget) {
-        controller.fogThresholdValueTarget.textContent = fogThresholdInput.value
-      }
     }
 
     // Sync route generation settings
@@ -1244,20 +1213,6 @@ export class SettingsController {
     }
   }
 
-  /**
-   * Update route opacity in real-time
-   */
-  async updateFogMode(event) {
-    const mode = event.target.value
-
-    const fogLayer = this.layerManager.getLayer("fog")
-    if (fogLayer) {
-      fogLayer.setMode(mode)
-    }
-
-    await SettingsManager.updateSetting("fogOfWarMode", mode)
-  }
-
   togglePointsEditing(event) {
     const enabled = event.target.checked
 
@@ -1437,8 +1392,6 @@ export class SettingsController {
 
     const settings = {
       routeOpacity: parseFloat(formData.get("routeOpacity")) / 100,
-      fogOfWarRadius: parseInt(formData.get("fogOfWarRadius"), 10),
-      fogOfWarThreshold: parseInt(formData.get("fogOfWarThreshold"), 10),
       metersBetweenRoutes: parseInt(formData.get("metersBetweenRoutes"), 10),
       minutesBetweenRoutes: parseInt(formData.get("minutesBetweenRoutes"), 10),
       pointsRenderingMode: formData.get("pointsRenderingMode"),
@@ -1578,23 +1531,6 @@ export class SettingsController {
       }
     }
 
-    // Update fog of war settings
-    if (
-      settings.fogOfWarRadius !== undefined ||
-      settings.fogOfWarThreshold !== undefined
-    ) {
-      const fogLayer = this.layerManager.getLayer("fog")
-      if (fogLayer) {
-        if (settings.fogOfWarRadius) {
-          fogLayer.clearRadius = settings.fogOfWarRadius
-        }
-        // Redraw fog layer if it has data and is visible
-        if (fogLayer.visible && fogLayer.data) {
-          await fogLayer.update(fogLayer.data)
-        }
-      }
-    }
-
     // For settings that require data reload
     if (
       settings.pointsRenderingMode ||
@@ -1606,18 +1542,6 @@ export class SettingsController {
   }
 
   // Display value update methods
-  updateFogRadiusDisplay(event) {
-    if (this.controller.hasFogRadiusValueTarget) {
-      this.controller.fogRadiusValueTarget.textContent = `${event.target.value}m`
-    }
-  }
-
-  updateFogThresholdDisplay(event) {
-    if (this.controller.hasFogThresholdValueTarget) {
-      this.controller.fogThresholdValueTarget.textContent = event.target.value
-    }
-  }
-
   updateMetersBetweenDisplay(event) {
     if (this.controller.hasMetersBetweenValueTarget) {
       this.controller.metersBetweenValueTarget.textContent = `${event.target.value}m`

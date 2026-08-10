@@ -10,7 +10,6 @@ describe 'Settings API', type: :request do
           'route_opacity': 60,
           'meters_between_routes': 500,
           'minutes_between_routes': 30,
-          'fog_of_war_meters': 50,
           'time_threshold_minutes': 30,
           'merge_threshold_minutes': 15,
           'preferred_map_layer': 'OpenStreetMap',
@@ -22,7 +21,6 @@ describe 'Settings API', type: :request do
           'photoprism_url': 'https://photoprism.example.com',
           'photoprism_api_key': 'your-photoprism-api-key',
           'speed_color_scale': 'viridis',
-          'fog_of_war_threshold': 100,
           'maps': { 'distance_unit': 'km' }
         }
       }
@@ -45,11 +43,6 @@ describe 'Settings API', type: :request do
             type: :number,
             example: 30,
             description: 'Minimum time between routes in minutes'
-          },
-          fog_of_war_meters: {
-            type: :number,
-            example: 50,
-            description: 'Fog of war radius in meters'
           },
           time_threshold_minutes: {
             type: :number,
@@ -105,11 +98,6 @@ describe 'Settings API', type: :request do
             type: :string,
             example: 'viridis',
             description: 'Color scale for speed-colored routes'
-          },
-          fog_of_war_threshold: {
-            type: :number,
-            example: 100,
-            description: 'Fog of war threshold value'
           },
           maps: {
             type: :object,
@@ -170,14 +158,6 @@ describe 'Settings API', type: :request do
                        ],
                        example: 30,
                        description: 'Minimum time between routes in minutes'
-                     },
-                     fog_of_war_meters: {
-                       oneOf: [
-                         { type: :number },
-                         { type: :string }
-                       ],
-                       example: 50,
-                       description: 'Fog of war radius in meters'
                      },
                      time_threshold_minutes: {
                        oneOf: [
@@ -255,15 +235,6 @@ describe 'Settings API', type: :request do
                        example: 'viridis',
                        description: 'Color scale for speed-colored routes'
                      },
-                     fog_of_war_threshold: {
-                       oneOf: [
-                         { type: :number },
-                         { type: :string },
-                         { type: :null }
-                       ],
-                       example: 100,
-                       description: 'Fog of war threshold value'
-                     }
                    }
                  }
                }

@@ -86,20 +86,6 @@ RSpec.describe 'Api::V1::Settings', type: :request do
         expect(user.reload.safe_settings.point_dragging_enabled?).to be false
       end
 
-      it 'updates fog_of_war_mode' do
-        patch "/api/v1/settings?api_key=#{api_key}", params: { settings: { fog_of_war_mode: 'hexagons' } }
-
-        expect(response).to have_http_status(:success)
-        expect(user.reload.safe_settings.fog_of_war_mode).to eq('hexagons')
-      end
-
-      it 'normalizes unknown fog_of_war_mode values to points' do
-        patch "/api/v1/settings?api_key=#{api_key}", params: { settings: { fog_of_war_mode: 'octagons' } }
-
-        expect(response).to have_http_status(:success)
-        expect(user.reload.safe_settings.fog_of_war_mode).to eq('points')
-      end
-
       it 'updates maps_maplibre_custom_theme' do
         theme = {
           base: 'blueprint',
