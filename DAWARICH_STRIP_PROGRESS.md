@@ -144,13 +144,13 @@ stays bootable and retained location-history capabilities stay testable througho
 
 ## Commit
 
-* Filled after commit
+* 8d56bb0 (`strip(dawarich): STRIP-001 remove fog of war`)
 
 ## Push
 
 * remote: origin (`https://github.com/mhyahya854/Lamha-Timeline-Separate.git`)
 * branch: main
-* result: filled after push
+* result: succeeded — `12a8631..8d56bb0 main -> main`; verified with `git ls-remote origin`
 
 ## Decisions
 
