@@ -245,13 +245,13 @@ stays bootable and retained location-history capabilities stay testable througho
 
 ## Commit
 
-* Filled after commit
+* 4d4d13a (`strip(dawarich): STRIP-002 remove family sharing subsystem`)
 
 ## Push
 
 * remote: origin (`https://github.com/mhyahya854/Lamha-Timeline-Separate.git`)
 * branch: main
-* result: filled after push
+* result: succeeded — `364aefe..4d4d13a main -> main`; verified with `git ls-remote origin`
 
 ## Decisions
 
