@@ -3,141 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe 'Users::Registrations', type: :request do
-  let(:family_owner) { create(:user) }
-  let(:family) { create(:family, creator: family_owner) }
-  let!(:owner_membership) { create(:family_membership, user: family_owner, family: family, role: :owner) }
-  let(:invitation) do
-    create(:family_invitation, family: family, invited_by: family_owner, email: 'invited@example.com')
-  end
-
-  describe 'Family Invitation Registration Flow' do
-    # Allow email/password registration for these tests
-    before do
-      stub_const('ALLOW_EMAIL_PASSWORD_REGISTRATION', true)
-    end
-
-    context 'when accessing registration with a valid invitation token' do
-      it 'shows family-focused registration page' do
-        get new_user_registration_path(invitation_token: invitation.token)
-
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include("Join #{family.name}!")
-        expect(response.body).to include(family_owner.email)
-        expect(response.body).to include(invitation.email)
-        expect(response.body).to include('Create Account &amp; Join Family')
-      end
-
-      it 'pre-fills email field with invitation email' do
-        get new_user_registration_path(invitation_token: invitation.token)
-
-        expect(response.body).to include('value="invited@example.com"')
-      end
-
-      it 'makes email field readonly' do
-        get new_user_registration_path(invitation_token: invitation.token)
-
-        expect(response.body).to include('readonly')
-      end
-
-      it 'hides normal login links' do
-        get new_user_registration_path(invitation_token: invitation.token)
-
-        expect(response.body).not_to include('devise/shared/links')
-      end
-    end
-
-    context 'when accessing registration without invitation token' do
-      it 'shows normal registration page' do
-        get new_user_registration_path
-
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include('Almost there!')
-        expect(response.body).to include('control over your location data')
-        expect(response.body).not_to include('Join')
-        expect(response.body).to include('Sign up')
-      end
-    end
-
-    context 'when creating account with valid invitation token' do
-      let(:user_params) do
-        {
-          email: invitation.email,
-          password: 'password123456',
-          password_confirmation: 'password123456'
-        }
-      end
-
-      let(:request_params) do
-        {
-          user: user_params,
-          invitation_token: invitation.token
-        }
-      end
-
-      it 'creates user and accepts invitation automatically' do
-        expect do
-          post user_registration_path, params: request_params
-        end.to change(User, :count).by(1)
-                                   .and change { invitation.reload.status }.from('pending').to('accepted')
-
-        new_user = User.find_by(email: invitation.email)
-        expect(new_user).to be_present
-        expect(new_user.family).to eq(family)
-        expect(family.reload.members).to include(new_user)
-      end
-
-      it 'redirects to family page after successful registration' do
-        post user_registration_path, params: request_params
-
-        expect(response).to redirect_to(family_path)
-      end
-
-      it 'displays success message with family name' do
-        post user_registration_path, params: request_params
-
-        # Check that user got the default registration success message
-        # (family welcome message is set but may be overridden by Devise)
-        expect(flash[:notice]).to include('signed up successfully')
-      end
-    end
-
-    context 'when creating account with invalid invitation token' do
-      it 'creates user but does not accept any invitation' do
-        expect do
-          post user_registration_path, params: {
-            user: {
-              email: 'user@example.com',
-              password: 'password123456',
-              password_confirmation: 'password123456'
-            },
-            invitation_token: 'invalid-token'
-          }
-        end.to change(User, :count).by(1)
-
-        new_user = User.find_by(email: 'user@example.com')
-        expect(new_user.family).to be_nil
-      end
-    end
-
-    context 'when invitation email does not match registration email' do
-      it 'creates user but does not accept invitation' do
-        expect do
-          post user_registration_path, params: {
-            user: {
-              email: 'different@example.com',
-              password: 'password123456',
-              password_confirmation: 'password123456'
-            },
-            invitation_token: invitation.token
-          }
-        end.to change(User, :count).by(1)
-
-        new_user = User.find_by(email: 'different@example.com')
-        expect(new_user.family).to be_nil
-        expect(invitation.reload.status).to eq('pending')
-      end
-    end
-  end
 
   describe 'Self-Hosted Mode' do
     before do
@@ -201,51 +66,7 @@ RSpec.describe 'Users::Registrations', type: :request do
       end
     end
 
-    context 'when accessing registration with valid invitation token' do
-      it 'allows registration page access' do
-        get new_user_registration_path(invitation_token: invitation.token)
 
-        expect(response).to have_http_status(:ok)
-        expect(response.body).to include("Join #{family.name}!")
-      end
-
-      it 'allows account creation' do
-        expect do
-          post user_registration_path, params: {
-            user: {
-              email: invitation.email,
-              password: 'password123456',
-              password_confirmation: 'password123456'
-            },
-            invitation_token: invitation.token
-          }
-        end.to change(User, :count).by(1)
-
-        expect(response).to redirect_to(family_path)
-      end
-    end
-
-    context 'when accessing registration with expired invitation' do
-      before { invitation.update!(expires_at: 1.day.ago) }
-
-      it 'redirects to root with error message' do
-        get new_user_registration_path(invitation_token: invitation.token)
-
-        expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to include('Registration is not available')
-      end
-    end
-
-    context 'when accessing registration with cancelled invitation' do
-      before { invitation.update!(status: :cancelled) }
-
-      it 'redirects to root with error message' do
-        get new_user_registration_path(invitation_token: invitation.token)
-
-        expect(response).to redirect_to(root_path)
-        expect(flash[:alert]).to include('Registration is not available')
-      end
-    end
   end
 
   describe 'Non-Self-Hosted Mode' do
@@ -284,93 +105,6 @@ RSpec.describe 'Users::Registrations', type: :request do
     end
   end
 
-  describe 'Invitation Token Handling' do
-    # Allow email/password registration for these tests
-    before do
-      stub_const('ALLOW_EMAIL_PASSWORD_REGISTRATION', true)
-    end
-
-    it 'accepts invitation token from params' do
-      get new_user_registration_path(invitation_token: invitation.token)
-
-      expect(response.body).to include("Join #{invitation.family.name}!")
-    end
-
-    it 'accepts invitation token from nested user params' do
-      post user_registration_path, params: {
-        user: {
-          email: invitation.email,
-          password: 'password123456',
-          password_confirmation: 'password123456'
-        },
-        invitation_token: invitation.token
-      }
-
-      new_user = User.find_by(email: invitation.email)
-      expect(new_user.family).to eq(family)
-    end
-
-    it 'handles session-stored invitation token' do
-      # Simulate session storage by passing the token directly in params
-      # (In real usage, this would come from the session after redirect from invitation page)
-      get new_user_registration_path(invitation_token: invitation.token)
-
-      expect(response.body).to include("Join #{invitation.family.name}!")
-    end
-  end
-
-  describe 'Error Handling' do
-    # Allow email/password registration for these tests
-    before do
-      stub_const('ALLOW_EMAIL_PASSWORD_REGISTRATION', true)
-    end
-
-    context 'when invitation acceptance fails' do
-      before do
-        # Mock service failure
-        allow_any_instance_of(Families::AcceptInvitation).to receive(:call).and_return(false)
-        allow_any_instance_of(Families::AcceptInvitation).to receive(:error_message).and_return('Mock error')
-      end
-
-      it 'creates user but shows invitation error in flash' do
-        expect do
-          post user_registration_path, params: {
-            user: {
-              email: invitation.email,
-              password: 'password123456',
-              password_confirmation: 'password123456'
-            },
-            invitation_token: invitation.token
-          }
-        end.to change(User, :count).by(1)
-
-        expect(flash[:alert]).to include('Mock error')
-      end
-    end
-
-    context 'when invitation acceptance raises exception' do
-      before do
-        # Mock service exception
-        allow_any_instance_of(Families::AcceptInvitation).to receive(:call).and_raise(StandardError, 'Test error')
-      end
-
-      it 'creates user but shows generic error in flash' do
-        expect do
-          post user_registration_path, params: {
-            user: {
-              email: invitation.email,
-              password: 'password123456',
-              password_confirmation: 'password123456'
-            },
-            invitation_token: invitation.token
-          }
-        end.to change(User, :count).by(1)
-
-        expect(flash[:alert]).to include('there was an issue accepting the invitation')
-      end
-    end
-  end
-
   describe 'Signup Intent Tracking' do
     context 'when self-hosted mode is disabled' do
       before do
@@ -385,11 +119,6 @@ RSpec.describe 'Users::Registrations', type: :request do
         expect(response.body).to include('self_hosted_demo')
       end
 
-      it 'does not show signup intent dropdown for family invitations' do
-        get new_user_registration_path(invitation_token: invitation.token)
-
-        expect(response.body).not_to include('How do you plan to use Dawarich?')
-      end
 
       it 'stores cloud intent in user settings' do
         unique_email = "intent-cloud-#{Time.current.to_i}@example.com"
@@ -714,52 +443,6 @@ RSpec.describe 'Users::Registrations', type: :request do
       end
     end
 
-    context 'when user is a family owner with members' do
-      let(:user_family) { create(:family, creator: user) }
-      let(:member) { create(:user) }
-
-      before do
-        create(:family_membership, user: user, family: user_family, role: :owner)
-        create(:family_membership, user: member, family: user_family, role: :member)
-      end
-
-      it 'does not delete the account' do
-        expect do
-          delete user_registration_path
-        end.not_to(change { user.reload.deleted_at })
-      end
-
-      it 'redirects back with an error message the browser can follow' do
-        delete user_registration_path
-
-        expect(response).to redirect_to(edit_user_registration_path)
-        expect(response).to have_http_status(:found)
-        expect(flash[:alert]).to eq('Cannot delete your account while you own a family with other members.')
-      end
-
-      it 'does not sign out the user' do
-        delete user_registration_path
-
-        expect(controller.current_user).to eq(user)
-      end
-
-      it 'does not enqueue deletion job' do
-        expect do
-          delete user_registration_path
-        end.not_to have_enqueued_job(Users::DestroyJob)
-      end
-
-      it 'still refuses on self-hosted even when the password is correct' do
-        allow(DawarichSettings).to receive(:self_hosted?).and_return(true)
-
-        expect do
-          delete user_registration_path, params: { password: 'password123456' }
-        end.not_to have_enqueued_job(Users::DestroyJob)
-
-        expect(response).to redirect_to(edit_user_registration_path)
-        expect(user.reload.deleted_at).to be_nil
-      end
-    end
 
     context 'concurrent deletion-request attempts' do
       it 'rate-limits to one confirmation email per user per window' do
@@ -777,21 +460,6 @@ RSpec.describe 'Users::Registrations', type: :request do
       end
     end
 
-    context 'when user can delete (family owner with no other members)' do
-      let(:user_family) { create(:family, creator: user) }
-
-      before do
-        create(:family_membership, user: user, family: user_family, role: :owner)
-      end
-
-      it 'allows the deletion-request flow (cloud — email confirmation will perform the delete)' do
-        expect do
-          delete user_registration_path
-        end.to have_enqueued_job(Users::MailerSendingJob).with(
-          user.id, 'account_destroy_confirmation', hash_including(:link_url)
-        )
-      end
-    end
   end
 
   describe 'UTM Parameter Tracking' do
@@ -806,11 +474,6 @@ RSpec.describe 'Users::Registrations', type: :request do
     end
 
     context 'when self-hosted mode is disabled' do
-      # Off the self-hosted grant, joining a family is gated on the owner holding
-      # the Family plan, so the fixture owner has to hold one for the invitation
-      # path to be reachable at all.
-      let(:family_owner) { create(:user, plan: :family, skip_auto_trial: true) }
-
       before do
         allow(DawarichSettings).to receive(:self_hosted?).and_return(false)
       end
@@ -917,23 +580,6 @@ RSpec.describe 'Users::Registrations', type: :request do
         expect(user.utm_campaign).to eq('campaign_only')
       end
 
-      it 'works with family invitations' do
-        get new_user_registration_path, params: utm_params.merge(invitation_token: invitation.token)
-
-        post user_registration_path, params: {
-          user: {
-            email: invitation.email,
-            password: 'password123456',
-            password_confirmation: 'password123456'
-          },
-          invitation_token: invitation.token
-        }
-
-        user = User.find_by(email: invitation.email)
-        expect(user.utm_source).to eq('google')
-        expect(user.utm_campaign).to eq('winter_2025')
-        expect(user.family).to eq(family)
-      end
     end
 
     context 'when self-hosted mode is enabled' do

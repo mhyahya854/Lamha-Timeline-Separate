@@ -18,7 +18,6 @@ RSpec.describe Entitlements do
       expect(entitlements.pro_api?).to be true
       expect(entitlements.integrations?).to be true
       expect(entitlements.public_sharing?).to be true
-      expect(entitlements.families?).to be true
     end
 
     it 'has no data window' do
@@ -55,10 +54,6 @@ RSpec.describe Entitlements do
         expect(entitlements.public_sharing?).to be true
       end
 
-      it 'does not grant family creation' do
-        expect(entitlements.families?).to be false
-      end
-
       it 'has no data window' do
         expect(entitlements.data_window).to be_nil
         expect(entitlements.data_window_start).to be_nil
@@ -80,7 +75,6 @@ RSpec.describe Entitlements do
         expect(entitlements.pro_api?).to be false
         expect(entitlements.integrations?).to be false
         expect(entitlements.public_sharing?).to be false
-        expect(entitlements.families?).to be false
       end
 
       it 'applies the 12-month data window' do
@@ -107,80 +101,5 @@ RSpec.describe Entitlements do
       end
     end
 
-    context 'with a family plan owner' do
-      let(:user) { create(:user, plan: :family, skip_auto_trial: true) }
-
-      before do
-        family = create(:family, creator: user)
-        create(:family_membership, :owner, family: family, user: user)
-      end
-
-      it 'grants pro capabilities and family creation' do
-        expect(entitlements.full_access?).to be true
-        expect(entitlements.write_api?).to be true
-        expect(entitlements.families?).to be true
-        expect(entitlements.data_window).to be_nil
-      end
-
-      it 'reports family as effective plan' do
-        expect(entitlements.effective_plan).to eq(:family)
-      end
-    end
-
-    context 'with a lite user who belongs to a family with a family-plan owner' do
-      let(:owner) { create(:user, plan: :family, skip_auto_trial: true) }
-      let(:user) { create(:user, plan: :lite, skip_auto_trial: true) }
-
-      before do
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        create(:family_membership, family: family, user: user)
-      end
-
-      it 'inherits full access through the family' do
-        expect(entitlements.effective_plan).to eq(:family)
-        expect(entitlements.full_access?).to be true
-        expect(entitlements.restricted?).to be false
-        expect(entitlements.write_api?).to be true
-        expect(entitlements.data_window).to be_nil
-      end
-    end
-
-    context 'with a lite user whose family owner subscription lapsed' do
-      let(:user) { create(:user, plan: :lite, skip_auto_trial: true) }
-
-      def build_family_with_owner(active_until:, status: :inactive)
-        owner = create(:user, plan: :family, skip_auto_trial: true, status: status,
-                              active_until: active_until)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        create(:family_membership, family: family, user: user)
-      end
-
-      it 'reverts the member to their raw plan once the owner subscription lapses' do
-        build_family_with_owner(active_until: 1.day.ago)
-
-        expect(entitlements.effective_plan).to eq(:lite)
-        expect(entitlements.full_access?).to be false
-      end
-
-      it 'keeps family access while a cancelled owner is still inside the paid period' do
-        build_family_with_owner(active_until: 10.days.from_now)
-
-        expect(entitlements.effective_plan).to eq(:family)
-      end
-
-      it 'grants family access while the owner is on a trial' do
-        build_family_with_owner(active_until: 7.days.from_now, status: :trial)
-
-        expect(entitlements.effective_plan).to eq(:family)
-      end
-
-      it 'reverts the member when the owner has no subscription window at all' do
-        build_family_with_owner(active_until: nil)
-
-        expect(entitlements.effective_plan).to eq(:lite)
-      end
-    end
   end
 end

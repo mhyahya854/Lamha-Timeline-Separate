@@ -53,22 +53,6 @@ class DawarichSettings
       @store_geodata ||= STORE_GEODATA
     end
 
-    # Self-hosted instances grant the family feature to everyone. On cloud it is
-    # part of the Family subscription plan, so access follows the user's plan
-    # rather than the hosting mode.
-    #
-    # Deliberately not memoized: the answer depends on the user, and
-    # DawarichSettings is a process-wide singleton.
-    def family_feature_available_for?(user)
-      return true if self_hosted?
-      return false if user.nil?
-
-      # Entitlements models the rule: the plan holder gets the feature, and so
-      # does everyone in a family whose owner holds it. When the owner's plan
-      # lapses, the whole family drops back together.
-      user.entitlements.families?
-    end
-
     # Returns true only for self-hosted OIDC (OpenID Connect) setups.
     # Cloud mode OAuth (GitHub, Google) is always supplementary to email/password
     # and should not trigger OIDC-only mode restrictions.
@@ -78,8 +62,7 @@ class DawarichSettings
 
     def features_for(user)
       {
-        reverse_geocoding: reverse_geocoding_enabled?,
-        family: family_feature_available_for?(user)
+        reverse_geocoding: reverse_geocoding_enabled?
       }
     end
 

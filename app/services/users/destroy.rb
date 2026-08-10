@@ -19,19 +19,6 @@ class Users::Destroy
     purge_attachments_for('Points::RawDataArchive', user.raw_data_archives)
 
     ActiveRecord::Base.transaction do
-      # Validate inside transaction to prevent TOCTOU race
-      # (a member could join/leave between check and delete if outside)
-      created_family = Family.find_by(creator_id: user_id)
-      if created_family
-        member_count = Family::Membership.where(family_id: created_family.id).count
-        if member_count > 1
-          error_message = 'Cannot delete user who owns a family with other members'
-          Rails.logger.warn "#{error_message}: user_id=#{user_id}"
-          user.errors.add(:base, error_message)
-          raise ActiveRecord::RecordInvalid, user
-        end
-      end
-
       # Delete associated records first (dependent: :destroy associations)
       # IMPORTANT: Order matters due to foreign key constraints!
 
@@ -63,25 +50,6 @@ class Users::Destroy
 
       user.raw_data_archives.delete_all
       user.digests.delete_all
-      user.sent_family_invitations.delete_all if user.respond_to?(:sent_family_invitations)
-
-      # Delete family location requests (has FK to users via requester_id and target_user_id)
-      Family::LocationRequest.where(requester_id: user.id)
-                             .or(Family::LocationRequest.where(target_user_id: user.id))
-                             .delete_all
-
-      # Delete family associations (memberships before family due to FK)
-      # Delete ALL family memberships for this user (using direct query to avoid association cache issues)
-      Family::Membership.where(user_id: user.id).delete_all
-
-      # If user created a family, delete all remaining memberships and the family
-      # Reuses created_family from the validation check above
-      if created_family
-        # Delete location requests referencing this family before deleting the family
-        Family::LocationRequest.where(family_id: created_family.id).delete_all
-        Family::Membership.where(family_id: created_family.id).delete_all
-        created_family.delete
-      end
 
       # Hard delete the user (bypasses soft-delete, skips callbacks)
       user.delete

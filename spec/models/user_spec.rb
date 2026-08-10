@@ -116,7 +116,7 @@ RSpec.describe User, type: :model do
     context 'when self-hosted' do
       before { allow(DawarichSettings).to receive(:self_hosted?).and_return(true) }
 
-      it 'returns the raw plan regardless of family membership' do
+      it 'returns the raw plan' do
         user = create(:user, plan: :lite, skip_auto_trial: true)
 
         expect(user.effective_plan).to eq(:lite)
@@ -132,114 +132,10 @@ RSpec.describe User, type: :model do
         expect(user.effective_plan).to eq(:pro)
       end
 
-      it 'returns :family for a family owner' do
-        owner = create(:user, plan: :family, skip_auto_trial: true)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-
-        expect(owner.effective_plan).to eq(:family)
-      end
-
-      it 'returns :lite for a lite user not in a family' do
+      it 'returns :lite for a lite cloud user' do
         user = create(:user, plan: :lite, skip_auto_trial: true)
 
         expect(user.effective_plan).to eq(:lite)
-      end
-
-      it 'returns :family for a lite member of a family-plan family' do
-        owner = create(:user, plan: :family, skip_auto_trial: true)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        member = create(:user, plan: :lite, skip_auto_trial: true)
-        create(:family_membership, family: family, user: member)
-
-        expect(member.effective_plan).to eq(:family)
-      end
-
-      it 'returns the raw plan for a lite member whose family owner is not on the family plan' do
-        owner = create(:user, plan: :pro, skip_auto_trial: true)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        member = create(:user, plan: :lite, skip_auto_trial: true)
-        create(:family_membership, family: family, user: member)
-
-        expect(member.effective_plan).to eq(:lite)
-      end
-
-      it 'reverts members to their raw plan once the owner subscription lapses' do
-        owner = create(:user, plan: :family, skip_auto_trial: true, status: :inactive,
-                              active_until: 1.day.ago)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        member = create(:user, plan: :lite, skip_auto_trial: true)
-        create(:family_membership, family: family, user: member)
-
-        expect(member.effective_plan).to eq(:lite)
-        expect(member.full_access?).to be false
-      end
-
-      it 'keeps members on family access while a cancelled owner is still inside the paid period' do
-        owner = create(:user, plan: :family, skip_auto_trial: true, status: :inactive,
-                              active_until: 10.days.from_now)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        member = create(:user, plan: :lite, skip_auto_trial: true)
-        create(:family_membership, family: family, user: member)
-
-        expect(member.effective_plan).to eq(:family)
-      end
-
-      it 'grants members family access while the owner is on a trial' do
-        owner = create(:user, plan: :family, skip_auto_trial: true, status: :trial,
-                              active_until: 7.days.from_now)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        member = create(:user, plan: :lite, skip_auto_trial: true)
-        create(:family_membership, family: family, user: member)
-
-        expect(member.effective_plan).to eq(:family)
-      end
-
-      it 'reverts members when the owner has no subscription window at all' do
-        owner = create(:user, plan: :family, skip_auto_trial: true, active_until: nil)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        member = create(:user, plan: :lite, skip_auto_trial: true)
-        create(:family_membership, family: family, user: member)
-
-        expect(member.effective_plan).to eq(:lite)
-      end
-
-      it 'reverts to the raw plan after the member leaves the family' do
-        owner = create(:user, plan: :family, skip_auto_trial: true)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        member = create(:user, plan: :lite, skip_auto_trial: true)
-        membership = create(:family_membership, family: family, user: member)
-
-        membership.destroy!
-        member.reload
-
-        expect(member.effective_plan).to eq(:lite)
-      end
-
-      it 'reverts all members when the owner plan drops below family, leaving the family dormant' do
-        owner = create(:user, plan: :family, skip_auto_trial: true)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        member = create(:user, plan: :lite, skip_auto_trial: true)
-        create(:family_membership, family: family, user: member)
-
-        expect(member.full_access?).to be true
-
-        owner.update!(plan: :pro)
-        member.reload
-
-        expect(member.full_access?).to be false
-        expect(member.effective_plan).to eq(:lite)
-        expect(member.in_family?).to be true
-        expect(Family.exists?(family.id)).to be true
-        expect(family.members).to include(member, owner)
       end
     end
   end
@@ -262,26 +158,8 @@ RSpec.describe User, type: :model do
         expect(create(:user, plan: :pro, skip_auto_trial: true).full_access?).to be true
       end
 
-      it 'is true for a family owner' do
-        owner = create(:user, plan: :family, skip_auto_trial: true)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-
-        expect(owner.full_access?).to be true
-      end
-
-      it 'is false for a lite user not in a family' do
+      it 'is false for a lite user' do
         expect(create(:user, plan: :lite, skip_auto_trial: true).full_access?).to be false
-      end
-
-      it 'is true for a lite member of a family-plan family' do
-        owner = create(:user, plan: :family, skip_auto_trial: true)
-        family = create(:family, creator: owner)
-        create(:family_membership, :owner, family: family, user: owner)
-        member = create(:user, plan: :lite, skip_auto_trial: true)
-        create(:family_membership, family: family, user: member)
-
-        expect(member.full_access?).to be true
       end
     end
   end

@@ -10,8 +10,7 @@ class ApplicationController < ActionController::Base
   around_action :set_user_time_zone
   before_action :unread_notifications, :set_self_hosted_status, :store_client_header
 
-  helper_method :current_user_safe_settings, :poster_ordering_enabled?, :family_feature_available?,
-                :current_user_features, :family_home_path
+  helper_method :current_user_safe_settings, :poster_ordering_enabled?, :current_user_features
 
   # Memoized per-request SafeSettings for the current user. Use this instead of
   # `current_user.safe_settings` in partials/helpers that may render many rows
@@ -20,21 +19,10 @@ class ApplicationController < ActionController::Base
     @current_user_safe_settings ||= current_user&.safe_settings
   end
 
-  # Memoized per request: the map serializes the whole hash and the navbar asks
-  # for the family flag twice; one plan lookup serves all of them.
+  # Memoized per request: the map serializes the whole hash; one plan lookup
+  # serves all consumers.
   def current_user_features
     @current_user_features ||= DawarichSettings.features_for(current_user)
-  end
-
-  def family_feature_available?
-    current_user_features[:family]
-  end
-
-  # Where "back to the family" should land: the family page while the plan is
-  # active, the lapsed/upgrade panel when it is not — going through the gated
-  # #show would bounce and overwrite the flash.
-  def family_home_path
-    family_feature_available? ? family_path : new_family_path
   end
 
   # Ordering is on unless this instance turned the flag off, so an install
@@ -88,13 +76,6 @@ class ApplicationController < ActionController::Base
   def after_sign_in_path_for(resource)
     return trial_resume_path if resource.respond_to?(:pending_payment?) && resource.pending_payment?
 
-    # Check for family invitation first
-    invitation_token = params[:invitation_token] || session[:invitation_token]
-    if invitation_token.present?
-      invitation = Family::Invitation.find_by(token: invitation_token)
-      return family_invitation_path(invitation.token) if invitation&.can_be_accepted?
-    end
-
     # Handle mobile client flow (iOS and Android)
     client_type = request.headers['X-Dawarich-Client'] || session[:dawarich_client]
 
@@ -139,26 +120,6 @@ class ApplicationController < ActionController::Base
         redirect_back fallback_location: root_path,
                       alert: 'This feature requires a Pro plan.',
                       status: :see_other
-      end
-    end
-  end
-
-  FAMILY_PLAN_REQUIRED_MESSAGE = 'This feature requires a Family plan.'
-
-  # Family routes exist on every instance; access is decided per user. Send web
-  # visitors to the family landing page, which explains the plan and carries the
-  # upgrade link. Api::V1 controllers override this with a JSON-only response.
-  def ensure_family_feature_available!
-    return if family_feature_available?
-
-    respond_to do |format|
-      format.html { redirect_to new_family_path, alert: FAMILY_PLAN_REQUIRED_MESSAGE, status: :see_other }
-      format.turbo_stream do
-        redirect_to new_family_path, alert: FAMILY_PLAN_REQUIRED_MESSAGE, status: :see_other
-      end
-      format.json do
-        render json: { error: 'family_plan_required', message: FAMILY_PLAN_REQUIRED_MESSAGE },
-               status: :forbidden
       end
     end
   end

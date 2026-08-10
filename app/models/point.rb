@@ -168,30 +168,6 @@ class Point < ApplicationRecord
       )
     end
 
-    broadcast_to_family if should_broadcast_to_family?
-  end
-
-  # family_sharing_enabled? goes first: it answers from already-loaded data,
-  # while the plan check loads the family and its owner on cloud.
-  def should_broadcast_to_family?
-    return false unless user.family_sharing_enabled?
-
-    DawarichSettings.family_feature_available_for?(user)
-  end
-
-  def broadcast_to_family
-    FamilyLocationsChannel.broadcast_to(
-      user.family,
-      {
-        user_id: user.id,
-        email: user.email,
-        email_initial: user.email.first.upcase,
-        latitude: lat,
-        longitude: lon,
-        timestamp: timestamp.to_i,
-        updated_at: Time.zone.at(timestamp.to_i).iso8601
-      }
-    )
   end
 
   def set_country

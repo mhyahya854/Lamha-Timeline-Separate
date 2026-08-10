@@ -52,13 +52,6 @@ class Settings::UsersController < ApplicationController
   def destroy
     @user = User.find(params[:id])
 
-    unless @user.can_delete_account?
-      redirect_to settings_users_url,
-                  alert: 'Cannot delete account while being owner of a family which has other members.',
-                  status: :see_other
-      return
-    end
-
     Users::DestroyJob.perform_later(@user.id) if @user.mark_as_deleted_atomically!
 
     redirect_to settings_users_url,

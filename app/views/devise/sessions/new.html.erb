@@ -1,24 +1,8 @@
 <div class="hero min-h-content bg-base-200">
   <div class="hero-content flex-col lg:flex-row-reverse w-full my-10">
     <div class="text-center lg:text-left">
-      <% if @invitation %>
-        <h1 class="text-5xl font-bold text-base-content">Sign in to join <%= @invitation.family.name %>!</h1>
-        <p class="py-6 text-base-content opacity-70">
-          You've been invited by <strong><%= @invitation.invited_by.email %></strong> to join their family.
-          Sign in to your account to accept the invitation.
-        </p>
-        <% if email_password_login_enabled? %>
-          <div class="alert alert-info">
-            <p class="text-sm">
-              Don't have an account yet?
-              <%= link_to "Create one here", new_user_registration_path(invitation_token: @invitation.token), class: "font-semibold underline" %>
-            </p>
-          </div>
-        <% end %>
-      <% else %>
-        <h1 class="text-5xl font-bold text-base-content">Login now</h1>
-        <p class="py-6 text-base-content opacity-70">and take control over your location data.</p>
-      <% end %>
+      <h1 class="text-5xl font-bold text-base-content">Login now</h1>
+      <p class="py-6 text-base-content opacity-70">and take control over your location data.</p>
     </div>
     <div class="card flex-shrink-0 w-full max-w-sm shadow-2xl bg-base-100 px-5 py-5">
       <% if email_password_login_enabled? %>

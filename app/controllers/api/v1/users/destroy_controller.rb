@@ -8,15 +8,8 @@ class Api::V1::Users::DestroyController < ApiController
   SUBSCRIPTION_NOTE = ' If you have an active Apple or Google subscription, cancel it in your ' \
                       'platform settings to avoid further charges.'
   SELF_HOSTED_DELETED_MESSAGE = 'Your account has been scheduled for deletion.'
-  CANNOT_DELETE_MESSAGE = 'You own a family with other members. Transfer ownership or remove ' \
-                          'members before deleting your account.'
 
   def destroy
-    unless current_api_user.can_delete_account?
-      return render(json: { error: 'cannot_delete_account', message: CANNOT_DELETE_MESSAGE },
-                    status: :unprocessable_content)
-    end
-
     DawarichSettings.self_hosted? ? destroy_self_hosted : destroy_cloud
   end
 

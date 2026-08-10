@@ -69,7 +69,6 @@ export default class extends Controller {
     "placesToggle",
     "scratchToggle",
     "anomaliesToggle",
-    "familyToggle",
     "flightsToggle",
     // Speed-colored routes
     "routesOptions",
@@ -78,9 +77,6 @@ export default class extends Controller {
     "speedColorScaleInput",
     // Globe projection
     "globeToggle",
-    // Family members
-    "familyMembersList",
-    "familyMembersContainer",
     // Area selection
     "selectAreaButton",
     "selectionActions",
@@ -361,23 +357,14 @@ export default class extends Controller {
     )
 
     this.loadMapData().then(() => {
-      if (this.settings?.familyEnabled) {
-        this.loadFamilyMembers()
-      }
       if (this.settings?.anomaliesEnabled) {
         this.routesManager.refreshAnomalies({ enabled: true })
       }
     })
-
-    // Show family members list immediately (doesn't depend on layer)
-    if (this.settings?.familyEnabled && this.hasFamilyMembersListTarget) {
-      this.familyMembersListTarget.style.display = "block"
-    }
   }
 
   disconnect() {
     this._disconnected = true
-    if (this._familyHistoryTimer) clearTimeout(this._familyHistoryTimer)
     this.replayPanel?.destroy()
     this.settingsController?.stopRecalculationPolling()
     this.searchManager?.destroy()
@@ -485,7 +472,6 @@ export default class extends Controller {
     this._clearDayHighlight()
     this.loadMapData()
     this.refreshTimelineFeedIfActive()
-    this.debouncedLoadFamilyHistory()
   }
 
   /**
@@ -518,12 +504,6 @@ export default class extends Controller {
       }
     })
     this.refreshTimelineFeedIfActive?.()
-    this.debouncedLoadFamilyHistory?.()
-  }
-
-  debouncedLoadFamilyHistory() {
-    if (this._familyHistoryTimer) clearTimeout(this._familyHistoryTimer)
-    this._familyHistoryTimer = setTimeout(() => this.loadFamilyHistory(), 300)
   }
 
   /**
@@ -582,12 +562,6 @@ export default class extends Controller {
     const parts = []
     for (const [source, count] of Object.entries(counts)) {
       parts.push(`${count.toLocaleString()} ${source}`)
-    }
-
-    // Append family count if family layer is enabled
-    if (this.settings?.familyEnabled) {
-      const familyCount = this._familyMemberCount || 0
-      parts.push(`${familyCount.toLocaleString()} family members`)
     }
 
     // Detect when a new data source appears and trigger a pop animation
@@ -1432,232 +1406,6 @@ export default class extends Controller {
   toggleAnomalies(event) {
     return this.routesManager.toggleAnomalies(event)
   }
-  toggleFamily(event) {
-    return this.routesManager.toggleFamily(event)
-  }
-
-  // Family Members methods
-  async loadFamilyMembers() {
-    try {
-      this.showProgress()
-      this.updateLoadingCounts({
-        counts: { family: 0 },
-        isComplete: false,
-      })
-
-      const response = await fetch("/api/v1/families/locations", {
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKeyValue}`,
-        },
-      })
-
-      if (!response.ok) {
-        if (response.status === 403) {
-          Toast.info("Family feature not available")
-          this.updateLoadingCounts({
-            counts: { family: 0 },
-            isComplete: true,
-          })
-          return
-        }
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      const locations = data.locations || []
-
-      // Update family layer with locations
-      const familyLayer = this.layerManager.getLayer("family")
-      if (familyLayer) {
-        familyLayer.loadMembers(locations)
-      }
-
-      // Update family count in badge
-      this._familyMemberCount = locations.length
-      this.updateLoadingCounts({
-        counts: { family: locations.length },
-        isComplete: true,
-      })
-
-      // Render family members list
-      this.renderFamilyMembersList(locations)
-
-      Toast.success(`Loaded ${locations.length} family member(s)`)
-
-      // Load history polylines
-      this.loadFamilyHistory()
-    } catch (error) {
-      console.error("[Maps V2] Failed to load family members:", error)
-      Toast.error("Failed to load family members")
-    }
-  }
-
-  async loadFamilyHistory() {
-    try {
-      const startAt = this.startDateValue
-      const endAt = this.endDateValue
-      if (!startAt || !endAt) return
-
-      const params = new URLSearchParams({ start_at: startAt, end_at: endAt })
-      const response = await fetch(
-        `/api/v1/families/locations/history?${params}`,
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.apiKeyValue}`,
-          },
-        },
-      )
-
-      if (!response.ok) return
-
-      const data = await response.json()
-      const members = data.members || []
-
-      const familyLayer = this.layerManager.getLayer("family")
-      if (familyLayer) {
-        if (members.length > 0) {
-          // Assign colors consistent with member markers
-          for (const member of members) {
-            member.color = this.getFamilyMemberColor(member.user_id)
-          }
-          familyLayer.loadMemberHistory(members)
-        } else {
-          familyLayer.clearHistory()
-        }
-      }
-
-      // Update member info lines with sharing_since data
-      this._familyHistoryData = members
-      this.updateFamilyInfoLines(members)
-    } catch (error) {
-      console.error("[Maps V2] Failed to load family history:", error)
-    }
-  }
-
-  updateFamilyInfoLines(historyMembers) {
-    if (!this.hasFamilyMembersContainerTarget) return
-
-    for (const member of historyMembers) {
-      const infoEl = this.familyMembersContainerTarget.querySelector(
-        `[data-member-info="${member.user_id}"]`,
-      )
-      if (!infoEl || !member.sharing_since) continue
-
-      const sharingDate = new Date(member.sharing_since)
-      const daysSharing = Math.min(
-        365,
-        Math.floor(
-          (Date.now() - sharingDate.getTime()) / (1000 * 60 * 60 * 24),
-        ),
-      )
-      const formattedDate = sharingDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      })
-
-      infoEl.textContent = `Sharing since ${formattedDate} (${daysSharing} day${daysSharing !== 1 ? "s" : ""} of history)`
-    }
-  }
-
-  renderFamilyMembersList(locations) {
-    if (!this.hasFamilyMembersContainerTarget) return
-
-    const container = this.familyMembersContainerTarget
-
-    if (locations.length === 0) {
-      container.innerHTML =
-        '<p class="text-xs text-base-content/60">No family members sharing location</p>'
-      return
-    }
-
-    container.replaceChildren(
-      ...locations.map((location) => {
-        const emailInitial = location.email?.charAt(0)?.toUpperCase() || "?"
-        const color = this.getFamilyMemberColor(location.user_id)
-        const lastSeen = new Date(location.updated_at).toLocaleString("en-US", {
-          timeZone: this.timezoneValue || "UTC",
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        })
-
-        const row = document.createElement("div")
-        row.className =
-          "flex items-center gap-2 p-2 hover:bg-base-200 rounded-lg cursor-pointer transition-colors"
-        row.dataset.action = "click->maps--maplibre#centerOnFamilyMember"
-        row.dataset.memberId = location.user_id
-
-        const avatar = document.createElement("div")
-        Object.assign(avatar.style, {
-          backgroundColor: color,
-          color: "white",
-          borderRadius: "50%",
-          width: "24px",
-          height: "24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "12px",
-          fontWeight: "bold",
-          flexShrink: "0",
-        })
-        avatar.textContent = emailInitial
-
-        const info = document.createElement("div")
-        info.className = "flex-1 min-w-0"
-
-        const emailDiv = document.createElement("div")
-        emailDiv.className = "text-sm font-medium truncate"
-        emailDiv.textContent = location.email || "Unknown"
-
-        const timeDiv = document.createElement("div")
-        timeDiv.className = "text-xs text-base-content/60"
-        timeDiv.textContent = lastSeen
-
-        const statusDiv = document.createElement("div")
-        statusDiv.className = "text-xs text-info/70"
-        statusDiv.dataset.memberInfo = location.user_id
-
-        info.append(emailDiv, timeDiv, statusDiv)
-        row.append(avatar, info)
-        return row
-      }),
-    )
-  }
-
-  getFamilyMemberColor(userId) {
-    const colors = [
-      "#3b82f6",
-      "#10b981",
-      "#f59e0b",
-      "#ef4444",
-      "#8b5cf6",
-      "#ec4899",
-    ]
-    // Use user ID to get consistent color
-    const hash = userId
-      .toString()
-      .split("")
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0)
-    return colors[hash % colors.length]
-  }
-
-  centerOnFamilyMember(event) {
-    const memberId = event.currentTarget.dataset.memberId
-    if (!memberId) return
-
-    const familyLayer = this.layerManager.getLayer("family")
-    if (familyLayer) {
-      familyLayer.centerOnMember(parseInt(memberId, 10))
-      Toast.success("Centered on family member")
-    }
-  }
-
   // Info Display methods
   showInfo(title, content, actions = []) {
     if (!this.hasInfoDisplayTarget) return

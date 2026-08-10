@@ -91,7 +91,6 @@ const LAYER_NAME_MAP = {
   Tracks: "tracksEnabled",
   Flights: "flightsEnabled",
   "Scratch map": "scratchEnabled",
-  "Family Members": "familyEnabled",
   Places: "placesEnabled",
   Anomalies: "anomaliesEnabled",
 }

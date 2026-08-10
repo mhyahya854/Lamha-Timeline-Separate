@@ -603,12 +603,6 @@ export class VisitsManager {
         "Confirmed Visits": this.getConfirmedVisitCirclesLayer(),
       }
 
-      // Include Family Members layer if available
-      if (window.familyMembersController?.familyMarkersLayer) {
-        controlsLayer["Family Members"] =
-          window.familyMembersController.familyMarkersLayer
-      }
-
       this.mapsController.layerControl = L.control
         .layers(this.mapsController.baseMaps(), controlsLayer)
         .addTo(this.mapsController.map)

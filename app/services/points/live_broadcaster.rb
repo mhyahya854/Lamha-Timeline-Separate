@@ -16,16 +16,14 @@ class Points::LiveBroadcaster
     return unless user
 
     live_map = user.safe_settings&.live_map_enabled
-    family = family_sharing?(user)
     active_live = SharedLink.active.where(user_id: user_id, resource_type: :live).to_a
-    return if !live_map && !family && active_live.empty?
+    return if !live_map && active_live.empty?
 
     payloads_by_timestamp = payloads.index_by { |p| p[:timestamp].to_i }
 
     upserted_results.each do |result|
       payload = payloads_by_timestamp[result['timestamp'].to_i] || {}
       broadcast_points(user, result, payload) if live_map
-      broadcast_family(user, result) if family
     end
 
     broadcast_live_shares(user, active_live) if active_live.any?
@@ -47,13 +45,6 @@ class Points::LiveBroadcaster
     shares.each { |share| SharedLocationChannel.broadcast_to(share, point) }
   end
 
-  # family_sharing_enabled? goes first: it answers from already-loaded data,
-  # while the plan check loads the family and its owner on cloud.
-  def family_sharing?(user)
-    user.family_sharing_enabled? &&
-      DawarichSettings.family_feature_available_for?(user)
-  end
-
   def broadcast_points(user, result, payload)
     PointsChannel.broadcast_to(
       user,
@@ -70,20 +61,4 @@ class Points::LiveBroadcaster
     )
   end
 
-  def broadcast_family(user, result)
-    timestamp = result['timestamp'].to_i
-
-    FamilyLocationsChannel.broadcast_to(
-      user.family,
-      {
-        user_id: user.id,
-        email: user.email,
-        email_initial: user.email.first.upcase,
-        latitude: result['latitude'].to_f,
-        longitude: result['longitude'].to_f,
-        timestamp: timestamp,
-        updated_at: Time.zone.at(timestamp).iso8601
-      }
-    )
-  end
 end

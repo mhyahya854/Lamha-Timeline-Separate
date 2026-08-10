@@ -26,7 +26,8 @@ bootstrap run. Status as of that run and the follow-up push retry:
   (missing GitHub `workflow` scope for OAuth token)
 - Bootstrap completion run: baseline push retried and **succeeded**; `origin/main` at `515de12`
 - STRIP-001 (Remove Fog of War): completed, committed, pushed; see record below
-- `## Next Task`: `STRIP-002` (see below)
+- STRIP-002 (Remove Family Sharing subsystem): completed, committed, pushed; see record below
+- `## Next Task`: `STRIP-003` (see below)
 
 ## Removal Queue (ordered)
 
@@ -37,7 +38,7 @@ stays bootable and retained location-history capabilities stay testable througho
 | ID | Task | Boundary notes | Status |
 | --- | --- | --- | --- |
 | STRIP-001 | Remove Fog of War | Remove feature controllers/views/routes/services/models/tests and settings surface. No KEEP dependency. | [x] |
-| STRIP-002 | Remove Family Sharing subsystem | Family accounts, memberships, invitations, location requests/sharing, family locations API, shared digests/stats for family. Keep nothing from family model. | pending |
+| STRIP-002 | Remove Family Sharing subsystem | Family accounts, memberships, invitations, location requests/sharing, family locations API, shared digests/stats for family. Keep nothing from family model. | [x] |
 | STRIP-003 | Remove Overland live-tracking endpoint | `api/v1/overland` batches controller + routes + tests. Live tracking is rejected. | pending |
 | STRIP-004 | Remove OwnTracks live-tracking endpoint and import pipeline | `api/v1/owntracks` points endpoint, OwnTracks import service/UI references. Google Timeline import must remain untouched. | pending |
 | STRIP-005 | Remove Traccar live-tracking endpoint | `api/v1/traccar` points controller + routes + tests. | pending |
@@ -61,6 +62,7 @@ stays bootable and retained location-history capabilities stay testable througho
 ## Completed Tasks
 
 - STRIP-001 Remove Fog of War (2026-08-10)
+- STRIP-002 Remove Family Sharing subsystem (2026-08-10)
 
 ## Completed Task
 
@@ -152,6 +154,105 @@ stays bootable and retained location-history capabilities stay testable througho
 * branch: main
 * result: succeeded — `12a8631..8d56bb0 main -> main`; verified with `git ls-remote origin`
 
+## Completed Task
+
+* Task ID: STRIP-002
+* Task name: Remove Family Sharing subsystem
+
+## Removed
+
+* Models: `Family`, `Family::Membership`, `Family::Invitation`, `Family::LocationRequest`,
+  `concerns/user_family.rb`, `UserFamily` include from `User`
+* Controllers: `FamiliesController`, `Family::*` (invitations/memberships/location_requests/
+  location_sharing), `Api::V1::Families::LocationsController`; all family routes (web + API)
+* Jobs: `Family::Invitations::SendingJob/CleanupJob`, `Families::ExpireLocationRequestsJob`;
+  `schedule.yml` entries removed
+* Mailer: `FamilyMailer` + views; Services: `families/*` (7); Policies: `FamilyPolicy` + 2
+* Channel: `FamilyLocationsChannel` (+ JS channel, importmap pin); point/live-broadcaster family
+  sharing removed
+* Frontend: family JS controllers (navbar indicator, members, map), `family_layer.js`,
+  MapLibre/Leaflet family layer wiring, family settings toggle/list, map channel family
+  subscription, settings manager `familyEnabled` mapping
+* Views: `families/*`, `family/*`, `family_mailer/*`, navbar family nav, maplibre settings
+  panel family block, leaflet family data attributes/banner, devise invitation UI, mailer copy
+* Config: family feature flag (`DawarichSettings`), `ensure_family_feature_available!` helpers,
+  `family_home_path`/`family_upgrade_url`, devise `cannot_delete` message, family jobs schedule,
+  family importmap pin
+* DB: 5 family migrations deleted; `db/schema.rb` family tables + foreign keys removed
+* Tasks: `demo.rake` family seeding, `e2e.rake` family users, `seed_e2e` comment
+* Swagger: family locations/history endpoints + users delete 422; family swagger spec
+* Specs: 37 family-specific spec files deleted; family tests removed from 15 shared specs
+
+## Preserved
+
+* `plan` enum value `family: 2` and subscription plan handling (Dawarich Cloud/subscription is
+  removed in a later task); `rack_attack` family rate tier retained with the plan name
+* All KEEP location-history capabilities untouched: Google Timeline import, cleanup/
+  normalization/deduplication, reverse geocoding, visits/places, routes, stats, trip geography
+* Account deletion, notifications, digests, and shared-link surfaces retained (their family
+  references removed only)
+
+## Files Changed
+
+155 files: 90 deleted, 65 modified (see commit diff; all changes family-scoped)
+
+## Validation Executed
+
+* `node --input-type=module --check <10 modified JS files>` — PASS (all parse)
+* `node --test spec/javascript/*_test.mjs` — PASS 64/64
+* `python yaml.safe_load swagger/v1/swagger.yaml` — PASS; 62 paths, no family references
+* `git diff --check` — PASS
+* `rg` stale-reference scans for family symbols/routes/helpers — no matches outside documented
+  intentional references
+* Ruby checks (`bundle exec rspec`, `bundle exec rubocop`, `rails runner`/`rails routes`,
+  `rails db:migrate`) — NOT RUN: environment has no Ruby/Bundler/Postgres/Docker;
+  Ruby edits reviewed manually via `git diff`
+
+## Repository Search
+
+* `rg -i family` across `app/ config/ lib/ db/ swagger/` — no feature references; only retained
+  plan enum (`family: 2`), rack-attack tier name, font-family CSS/JS, generic copy
+* `rg` for removed symbols (`Family::`, `Families::`, `family_path`, `family_invitation_path`,
+  `family_feature_available`, `ensure_family`, `FamilyLocationsChannel`, `familyEnabled`,
+  `Family Members`, `can_delete_account`, family migration timestamps) — no matches
+* Intentional surviving references: `User#plan` enum + specs, subscriptions plan tests,
+  OAuth `family_name` fixture, "friends and family" copy, `joined the family` notification test
+
+## Database Impact
+
+* `db/schema.rb`: `families`, `family_invitations`, `family_location_requests`,
+  `family_memberships` tables and their foreign keys removed; no other schema changes.
+  Chain integrity: existing installs already recorded those migration versions in
+  `schema_migrations`; fresh installs no longer apply them (no retained code references the
+  family tables). Existing rows in those tables are orphaned/inert and intentionally not
+  scrubbed (no forward data migration)
+
+## Decisions
+
+* The `family` subscription plan enum value and plan-based entitlements are retained: they are
+  part of the Dawarich Cloud/subscription model removed in a later task, and dropping the enum
+  value would risk breaking existing DBs; only family-feature inheritance
+  (`inherited_family_access?`, `families?`, feature flag) was removed
+* Family migrations deleted (not forward-migrated) for the same verified reasons as STRIP-001:
+  exclusively family-feature tables, no KEEP dependency, no chain break
+* Account-deletion family ownership checks (`can_delete_account?`) removed entirely — no
+  remaining account-level restriction exists without families
+* Demo/e2e seeding no longer creates family members; the e2e user list is reduced to demo/lite
+
+## Blockers
+
+* None (validation limits from missing Ruby/Postgres tooling documented above, not blockers)
+
+## Commit
+
+* Filled after commit
+
+## Push
+
+* remote: origin (`https://github.com/mhyahya854/Lamha-Timeline-Separate.git`)
+* branch: main
+* result: filled after push
+
 ## Decisions
 
 - **Git:** The directory was not a git repository; bootstrap initialized it on `main` with
@@ -176,4 +277,4 @@ stays bootable and retained location-history capabilities stay testable througho
 
 ## Next Task
 
-`STRIP-002` — Remove Family Sharing subsystem
+`STRIP-003` — Remove Overland live-tracking endpoint

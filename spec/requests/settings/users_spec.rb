@@ -358,37 +358,6 @@ RSpec.describe '/settings/users', type: :request do
             end
           end
 
-          context 'when user is a family owner with members' do
-            let(:family) { create(:family, creator: user) }
-            let(:member) { create(:user) }
-
-            before do
-              create(:family_membership, user: user, family: family, role: :owner)
-              create(:family_membership, user: member, family: family, role: :member)
-            end
-
-            it 'does not delete the user' do
-              expect do
-                delete settings_user_url(user)
-              end.not_to(change { user.reload.deleted_at })
-            end
-
-            it 'redirects back with an error message' do
-              delete settings_user_url(user)
-
-              expect(response).to have_http_status(:see_other)
-              expect(flash[:alert]).to eq(
-                'Cannot delete account while being owner of a family which has other members.'
-              )
-            end
-
-            it 'does not enqueue deletion job' do
-              expect do
-                delete settings_user_url(user)
-              end.not_to have_enqueued_job(Users::DestroyJob)
-            end
-          end
-
           context 'concurrent deletion attempts' do
             it 'returns not found for second deletion of already-deleted user' do
               # First deletion

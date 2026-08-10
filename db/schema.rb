@@ -125,56 +125,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_120000) do
     t.index ["user_id"], name: "index_exports_on_user_id"
   end
 
-  create_table "families", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "creator_id", null: false
-    t.string "name", limit: 50, null: false
-    t.datetime "updated_at", null: false
-    t.index ["creator_id"], name: "index_families_on_creator_id"
-  end
-
-  create_table "family_invitations", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "email", null: false
-    t.datetime "expires_at", null: false
-    t.bigint "family_id", null: false
-    t.bigint "invited_by_id", null: false
-    t.integer "status", default: 0, null: false
-    t.string "token", null: false
-    t.datetime "updated_at", null: false
-    t.index ["family_id", "email"], name: "index_family_invitations_on_family_id_and_email"
-    t.index ["family_id", "status", "expires_at"], name: "index_family_invitations_on_family_status_expires"
-    t.index ["status", "expires_at"], name: "index_family_invitations_on_status_and_expires_at"
-    t.index ["status", "updated_at"], name: "index_family_invitations_on_status_and_updated_at"
-    t.index ["token"], name: "index_family_invitations_on_token", unique: true
-  end
-
-  create_table "family_location_requests", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "expires_at", null: false
-    t.bigint "family_id", null: false
-    t.bigint "requester_id", null: false
-    t.datetime "responded_at"
-    t.integer "status", default: 0, null: false
-    t.string "suggested_duration", default: "24h", null: false
-    t.bigint "target_user_id", null: false
-    t.datetime "updated_at", null: false
-    t.index ["expires_at", "status"], name: "idx_family_loc_requests_expires_status"
-    t.index ["family_id"], name: "index_family_location_requests_on_family_id"
-    t.index ["requester_id", "target_user_id", "status"], name: "idx_family_loc_requests_requester_target_status"
-    t.index ["target_user_id", "status"], name: "idx_family_loc_requests_target_status"
-  end
-
-  create_table "family_memberships", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "family_id", null: false
-    t.integer "role", default: 1, null: false
-    t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
-    t.index ["family_id", "role"], name: "index_family_memberships_on_family_and_role"
-    t.index ["user_id"], name: "index_family_memberships_on_user_id", unique: true
-  end
-
   create_table "flights", force: :cascade do |t|
     t.string "aircraft_name"
     t.string "aircraft_reg"
@@ -625,14 +575,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_120000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "areas", "users"
   add_foreign_key "digests", "users"
-  add_foreign_key "families", "users", column: "creator_id"
-  add_foreign_key "family_invitations", "families"
-  add_foreign_key "family_invitations", "users", column: "invited_by_id"
-  add_foreign_key "family_location_requests", "families"
-  add_foreign_key "family_location_requests", "users", column: "requester_id"
-  add_foreign_key "family_location_requests", "users", column: "target_user_id"
-  add_foreign_key "family_memberships", "families"
-  add_foreign_key "family_memberships", "users"
   add_foreign_key "flights", "users"
   add_foreign_key "notes", "users"
   add_foreign_key "notifications", "users"

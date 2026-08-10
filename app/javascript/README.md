@@ -290,8 +290,7 @@ Layers are rendered in specific order (bottom to top):
 6. **Visits Layer** - Detected visits to places
 7. **Places Layer** - Named locations
 8. **Photos Layer** - Photos with geolocation
-9. **Family Layer** - Real-time family member locations
-10. **Points Layer** - Individual location points
+9. **Points Layer** - Individual location points
 
 ### BaseLayer Pattern
 

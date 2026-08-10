@@ -289,7 +289,7 @@ export default class extends BaseController {
       this.userTags = []
     }
 
-    // Expose maps controller globally for family integration
+    // Expose maps controller globally
     window.mapsController = this
 
     this.addEventListeners()
@@ -301,9 +301,6 @@ export default class extends BaseController {
       this.addRoutesTracksSelector()
     }
     this.switchRouteMode("routes", true)
-
-    // Listen for Family Members layer becoming ready
-    this.setupFamilyLayerListener()
 
     // Initialize tracks layer
     this.initializeTracksLayer()
@@ -653,14 +650,6 @@ export default class extends BaseController {
       ],
     }
 
-    // Add Family Members layer if available
-    if (additionalLayers["Family Members"]) {
-      overlaysTree.children.push({
-        label: "Family Members",
-        layer: additionalLayers["Family Members"],
-      })
-    }
-
     // Create the tree control
     return L.control.layers.tree(baseMapsTree, overlaysTree, {
       namedToggle: false,
@@ -878,7 +867,6 @@ export default class extends BaseController {
       Photos: this.photoMarkers,
       Suggested: this.visitsManager?.getVisitCirclesLayer(),
       Confirmed: this.visitsManager?.getConfirmedVisitCirclesLayer(),
-      "Family Members": window.familyMembersController?.familyMarkersLayer,
     }
 
     // Check standard layers
@@ -1834,7 +1822,6 @@ export default class extends BaseController {
       Photos: this.photoMarkers,
       Suggested: this.visitsManager?.getVisitCirclesLayer(),
       Confirmed: this.visitsManager?.getConfirmedVisitCirclesLayer(),
-      "Family Members": window.familyMembersController?.familyMarkersLayer,
     }
 
     // Apply saved layer preferences for standard layers
@@ -1850,15 +1837,6 @@ export default class extends BaseController {
 
       const shouldBeEnabled = enabledLayers.includes(name)
       const isCurrentlyEnabled = this.map.hasLayer(layer)
-
-      if (name === "Family Members") {
-        console.log("Family Members layer check:", {
-          shouldBeEnabled,
-          isCurrentlyEnabled,
-          layerExists: !!layer,
-          controllerExists: !!window.familyMembersController,
-        })
-      }
 
       if (shouldBeEnabled && !isCurrentlyEnabled) {
         // Add layer to map
@@ -1893,15 +1871,6 @@ export default class extends BaseController {
             !this.map._controlCorners.topleft.querySelector(".leaflet-draw")
           ) {
             this.map.addControl(this.drawControl)
-          }
-        } else if (name === "Family Members") {
-          // Refresh family locations when layer is restored
-          if (
-            window.familyMembersController &&
-            typeof window.familyMembersController.refreshFamilyLocations ===
-              "function"
-          ) {
-            window.familyMembersController.refreshFamilyLocations()
           }
         }
       } else if (!shouldBeEnabled && isCurrentlyEnabled) {
@@ -2006,39 +1975,6 @@ export default class extends BaseController {
         }
       }
     })
-  }
-
-  setupFamilyLayerListener() {
-    // Listen for when the Family Members layer becomes available
-    document.addEventListener(
-      "family:layer:ready",
-      (event) => {
-        console.log("Family layer ready event received")
-        const enabledLayers = this.userSettings.enabled_map_layers || []
-
-        // Check if Family Members should be enabled based on saved settings
-        if (enabledLayers.includes("Family Members")) {
-          const layer = event.detail.layer
-          if (layer && !this.map.hasLayer(layer)) {
-            // Set flag to prevent saving during restoration
-            this.isRestoringLayers = true
-
-            layer.addTo(this.map)
-            console.log("Enabled layer: Family Members (from ready event)")
-
-            // No explicit refreshFamilyLocations() call needed here —
-            // layer.addTo() fires Leaflet's overlayadd event, which
-            // triggers refreshFamilyLocations() in the family controller.
-
-            // Reset flag after a short delay to allow all events to complete
-            setTimeout(() => {
-              this.isRestoringLayers = false
-            }, 100)
-          }
-        }
-      },
-      { once: true },
-    ) // Only listen once
   }
 
   toggleRightPanel() {
@@ -2618,18 +2554,6 @@ export default class extends BaseController {
         this.userTheme,
       )
     }
-  }
-
-  // Helper method for family controller to update layer control
-  updateLayerControl(additionalLayers = {}) {
-    if (!this.layerControl) return
-
-    // Remove existing layer control
-    this.map.removeControl(this.layerControl)
-
-    // Re-add the layer control with additional layers
-    this.layerControl = this.createTreeLayerControl(additionalLayers)
-    this.map.addControl(this.layerControl)
   }
 
   togglePlaceCreationMode() {

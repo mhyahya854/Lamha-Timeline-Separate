@@ -48,34 +48,6 @@ RSpec.describe 'Users::DestroyConfirmations', type: :request do
       expect(response).to redirect_to(new_user_session_path)
     end
 
-    it 'rejects deletion when the user owns a family with other members' do
-      family = create(:family, creator: user)
-      create(:family_membership, family: family, user: user, role: :owner)
-      create(:family_membership, family: family, user: create(:user), role: :member)
-
-      token = Users::IssueDestroyToken.new(user).call
-
-      get '/users/me/destroy/confirm', params: { token: token }
-
-      expect(user.reload.deleted_at).to be_nil
-      expect(response).to redirect_to(new_user_session_path)
-      expect(flash[:alert]).to match(/family/i)
-    end
-
-    it 'does NOT consume the token when family ownership blocks deletion' do
-      family = create(:family, creator: user)
-      create(:family_membership, family: family, user: user, role: :owner)
-      member = create(:user)
-      create(:family_membership, family: family, user: member, role: :member)
-
-      token = Users::IssueDestroyToken.new(user).call
-      get '/users/me/destroy/confirm', params: { token: token }
-
-      member.destroy
-      get '/users/me/destroy/confirm', params: { token: token }
-      expect(user.reload.deleted_at).to be_present
-    end
-
     it 'rejects an invalid/garbage token' do
       get '/users/me/destroy/confirm', params: { token: 'not-a-real-token' }
 

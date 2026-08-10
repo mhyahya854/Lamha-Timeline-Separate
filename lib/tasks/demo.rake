@@ -93,12 +93,7 @@ namespace :demo do
     puts "✅ #{timeline_summary[:tags]} tags · #{timeline_summary[:places]} places · " \
          "#{timeline_summary[:visits]} visits (#{timeline_summary[:by_status]})"
 
-    # 8. Create family with members
-    puts "\n👨‍👩‍👧‍👦 Creating demo family..."
-    family_members = create_family_with_members(user)
-    puts "✅ Created family with #{family_members.count} members"
-
-    # 9. Create Lite demo user
+    # 8. Create Lite demo user
     puts "\n📝 Creating Lite demo user..."
     lite_user = User.find_or_initialize_by(email: 'lite@dawarich.app')
     if lite_user.new_record?
@@ -153,7 +148,6 @@ namespace :demo do
     puts "   Areas: #{user.areas.count}"
     puts "   Tracks: #{user.tracks.count}"
     puts "   Track Segments: #{TrackSegment.joins(:track).where(tracks: { user_id: user.id }).count}"
-    puts "   Family Members: #{family_members.count}"
     puts "\n   Lite User: #{lite_user.email}"
     puts "   Lite Points: #{Point.where(user_id: lite_user.id).count}"
     lite_points = Point.where(user_id: lite_user.id)
@@ -166,10 +160,6 @@ namespace :demo do
     puts '   Password: safepassword'
     puts "\n   Lite Email: lite@dawarich.app"
     puts '   Lite Password: safepassword'
-    puts "\n👨‍👩‍👧‍👦 Family member credentials:"
-    family_members.each_with_index do |member, index|
-      puts "   Member #{index + 1}: #{member.email} / safepassword / API Key: #{member.api_key}"
-    end
   end
 
   def create_visits(user, count, status)
@@ -297,113 +287,6 @@ namespace :demo do
     c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 
     rm * c # Distance in meters
-  end
-
-  # Specific API keys for e2e testing
-  FAMILY_API_KEYS = %w[
-    family_member_1_api_key
-    family_member_2_api_key
-    family_member_3_api_key
-  ].freeze
-
-  def create_family_with_members(owner)
-    # Create or find family
-    family = Family.find_or_initialize_by(creator: owner)
-
-    if family.new_record?
-      family.name = 'Demo Family'
-      family.save!
-      puts "   Created family: #{family.name}"
-    else
-      puts "   ℹ️  Family already exists: #{family.name}"
-    end
-
-    # Create or find owner membership
-    Family::Membership.find_or_create_by!(
-      family: family,
-      user: owner,
-      role: :owner
-    )
-
-    # Create 3 family members with location data
-    member_emails = [
-      'family.member1@dawarich.app',
-      'family.member2@dawarich.app',
-      'family.member3@dawarich.app'
-    ]
-
-    family_members = []
-
-    # Get some sample points from the owner's data to create realistic locations
-    sample_points = Point.where(user_id: owner.id).order('RANDOM()').limit(10)
-
-    member_emails.each_with_index do |email, index|
-      # Create or find family member user
-      member = User.find_or_initialize_by(email: email)
-
-      if member.new_record?
-        member.password = 'safepassword'
-        member.password_confirmation = 'safepassword'
-        member.save!
-        member.update!(status: :active, active_until: 1000.years.from_now)
-        puts "   Created family member: #{member.email}"
-      else
-        puts "   ℹ️  Family member already exists: #{member.email}"
-      end
-
-      # Set specific API key for e2e testing
-      member.update!(api_key: FAMILY_API_KEYS[index])
-
-      # Add member to family
-      Family::Membership.find_or_create_by!(
-        family: family,
-        user: member,
-        role: :member
-      )
-
-      # Enable location sharing for this member (permanent)
-      member.update_family_location_sharing!(true, duration: 'permanent')
-
-      # Create some points for this family member near owner's locations
-      if sample_points.any?
-        # Get a different sample point for each member
-        base_point = sample_points[index % sample_points.length]
-
-        # Create 3-5 recent points for this member within 1km of base location
-        points_count = rand(3..5)
-
-        points_count.times do |_point_index|
-          # Add random offset (within ~1km)
-          lat_offset = (rand(-0.01..0.01) * 100) / 100.0
-          lon_offset = (rand(-0.01..0.01) * 100) / 100.0
-
-          # Calculate new coordinates
-          lat = base_point.lat + lat_offset
-          lon = base_point.lon + lon_offset
-
-          # Create point with recent timestamp (last 24 hours)
-          timestamp = (Time.current - rand(0..24).hours).to_i
-
-          Point.create!(
-            user: member,
-            lonlat: "POINT(#{lon} #{lat})",
-            timestamp: timestamp,
-            altitude: base_point.altitude || 0,
-            velocity: rand(0..50),
-            battery: rand(20..100),
-            battery_status: %w[charging connected_not_charging full].sample,
-            tracker_id: "demo_tracker_#{member.id}",
-            import_id: nil
-          )
-        end
-
-        puts "   Created #{points_count} location points for #{member.email}"
-      end
-
-      family_members << member
-    end
-
-    family_members
   end
 
   # Transportation modes for demo tracks

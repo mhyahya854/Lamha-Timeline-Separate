@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reset demo/lite/family users and re-seed the canonical e2e fixture set.
+# Reset demo/lite users and re-seed the canonical e2e fixture set.
 # Wraps `rake e2e:reset_and_seed`. Run from the dawarich repo root, or
 # from anywhere — the script cd's to the repo root.
 

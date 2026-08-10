@@ -45,20 +45,10 @@ nightly_reverse_geocoding_job:
   class: "Points::NightlyReverseGeocodingJob"
   queue: reverse_geocoding
 
-nightly_family_invitations_cleanup_job:
-  cron: "30 2 * * *" # every day at 02:30
-  class: "Family::Invitations::CleanupJob"
-  queue: families
-
 stale_jobs_recovery_job:
   cron: "*/30 * * * *" # every 30 minutes
   class: "StaleJobsRecoveryJob"
   queue: exports
-
-family_location_requests_expiry_job:
-  cron: "30 * * * *" # every hour at :30
-  class: "Families::ExpireLocationRequestsJob"
-  queue: default
 
 points_counter_correction_job:
   cron: "0 */6 * * *" # every 6 hours

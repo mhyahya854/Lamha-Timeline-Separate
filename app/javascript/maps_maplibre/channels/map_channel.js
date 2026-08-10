@@ -2,14 +2,13 @@ import consumer from "../../channels/consumer"
 
 /**
  * Create map channel subscription for maps_maplibre
- * Wraps the existing FamilyLocationsChannel and other channels for real-time updates
+ * Creates real-time update subscriptions for the map
  * @param {Object} options - { received, connected, disconnected, enableLiveMode }
  * @returns {Object} Subscriptions object with multiple channels
  */
 export function createMapChannel(options = {}) {
   const { enableLiveMode = false, ...callbacks } = options
   const subscriptions = {
-    family: null,
     points: null,
     tracks: null,
   }
@@ -26,43 +25,6 @@ export function createMapChannel(options = {}) {
       subscriptions,
       unsubscribeAll() {},
     }
-  }
-
-  // Subscribe to family locations if family feature is enabled
-  try {
-    const familyFeaturesElement = document.querySelector(
-      "[data-family-members-features-value]",
-    )
-    const features = familyFeaturesElement
-      ? JSON.parse(familyFeaturesElement.dataset.familyMembersFeaturesValue)
-      : {}
-
-    if (features.family) {
-      subscriptions.family = consumer.subscriptions.create(
-        "FamilyLocationsChannel",
-        {
-          connected() {
-            console.log("FamilyLocationsChannel connected")
-            callbacks.connected?.("family")
-          },
-
-          disconnected() {
-            console.log("FamilyLocationsChannel disconnected")
-            callbacks.disconnected?.("family")
-          },
-
-          received(data) {
-            console.log("FamilyLocationsChannel received:", data)
-            callbacks.received?.({
-              type: "family_location",
-              member: data,
-            })
-          },
-        },
-      )
-    }
-  } catch (error) {
-    console.warn("[MapChannel] Failed to subscribe to family channel:", error)
   }
 
   // Subscribe to points channel for real-time point updates (only if live mode is enabled)

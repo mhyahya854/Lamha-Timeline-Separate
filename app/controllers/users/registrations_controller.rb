@@ -6,7 +6,6 @@ class Users::RegistrationsController < Devise::RegistrationsController
   include AccountDeletionConfirmable
 
   prepend_before_action :handle_logged_in_with_ticket, only: :new
-  before_action :set_invitation, only: %i[new create]
   before_action :check_registration_allowed, only: %i[new create]
   before_action :store_utm_params, only: %i[new], unless: -> { DawarichSettings.self_hosted? }
   before_action :store_gads_linker, only: %i[new], unless: -> { DawarichSettings.self_hosted? }
@@ -15,8 +14,6 @@ class Users::RegistrationsController < Devise::RegistrationsController
     session[:pending_import_ticket] = params[:import_ticket] if params[:import_ticket].present?
 
     build_resource({})
-
-    resource.email = @invitation.email if @invitation
 
     yield resource if block_given?
 
@@ -58,12 +55,6 @@ class Users::RegistrationsController < Devise::RegistrationsController
   end
 
   def destroy
-    unless resource.can_delete_account?
-      set_flash_message! :alert, :cannot_delete
-      redirect_to edit_user_registration_path
-      return
-    end
-
     DawarichSettings.self_hosted? ? destroy_self_hosted : destroy_cloud
   end
 
@@ -115,14 +106,10 @@ class Users::RegistrationsController < Devise::RegistrationsController
   end
 
   def after_sign_up_path_for(resource)
-    return family_path if @invitation&.family
-
     super(resource)
   end
 
   def after_inactive_sign_up_path_for(resource)
-    return family_path if @invitation&.family
-
     super(resource)
   end
 
@@ -140,7 +127,6 @@ class Users::RegistrationsController < Devise::RegistrationsController
   def post_signup_setup(resource)
     assign_utm_params(resource)
     store_signup_intent(resource)
-    accept_invitation_for_user(resource) if @invitation
   end
 
   def manager_checkout_url(user)
@@ -168,58 +154,21 @@ class Users::RegistrationsController < Devise::RegistrationsController
     return unless self_hosted_mode?
 
     # When OIDC is enabled and email/password registration is disabled,
-    # block all email/password registration including family invitations
+    # block all email/password registration.
     if oidc_only_mode?
       redirect_to root_path,
                   alert: 'Email/password registration is disabled. Please use OIDC to sign in.'
       return
     end
 
-    return if valid_invitation_token?
     return if email_password_registration_allowed?
 
     redirect_to root_path,
                 alert: 'Registration is not available. Please contact your administrator for access.'
   end
 
-  def set_invitation
-    return if invitation_token.blank?
-
-    @invitation = Family::Invitation.find_by(token: invitation_token)
-  end
-
   def self_hosted_mode?
     DawarichSettings.self_hosted?
-  end
-
-  def valid_invitation_token?
-    @invitation&.can_be_accepted?
-  end
-
-  def invitation_token
-    @invitation_token ||= params[:invitation_token] ||
-                          params.dig(:user, :invitation_token) ||
-                          session[:invitation_token]
-  end
-
-  def accept_invitation_for_user(user)
-    return unless @invitation&.can_be_accepted?
-
-    service = Families::AcceptInvitation.new(
-      invitation: @invitation,
-      user: user
-    )
-
-    if service.call
-      flash[:notice] = "Welcome to #{@invitation.family.name}! You're now part of the family."
-    else
-      flash[:alert] =
-        "Account created successfully, but there was an issue accepting the invitation: #{service.error_message}"
-    end
-  rescue StandardError => e
-    Rails.logger.error "Error accepting invitation during registration: #{e.message}"
-    flash[:alert] =
-      'Account created successfully, but there was an issue accepting the invitation. Please try accepting it again.'
   end
 
   def sign_up_params

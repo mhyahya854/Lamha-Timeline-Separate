@@ -5,7 +5,7 @@
 #
 # The Playwright specs assume:
 #   - demo@dawarich.app: ~1000 points (Berlin), 50+50 visits, 10 areas,
-#     20 tracks, timeline fixtures, family — all dated around 2025-10-15
+#     20 tracks, timeline fixtures — all dated around 2025-10-15
 #   - lite@dawarich.app: 20 points within 12mo + 10 points 13-14mo old,
 #     so the "data window" upsell banner appears
 #
@@ -18,9 +18,6 @@ namespace :e2e do
   E2E_USER_EMAILS = %w[
     demo@dawarich.app
     lite@dawarich.app
-    family.member1@dawarich.app
-    family.member2@dawarich.app
-    family.member3@dawarich.app
   ].freeze
 
   # The base time the demo data is shifted to land at. Specs hardcode
@@ -79,7 +76,7 @@ namespace :e2e do
     abort '✋ Refusing to run e2e:reset in production. Set ALLOW_E2E_RESET=1 to override.'
   end
 
-  desc 'Reset demo + lite + family users to a clean state and re-seed canonical e2e data'
+  desc 'Reset demo + lite users to a clean state and re-seed canonical e2e data'
   task reset_and_seed: :environment do
     assert_safe_environment!
 
@@ -313,7 +310,7 @@ namespace :e2e do
          "(#{points.size} pts, #{distance_meters.to_i}m)"
   end
 
-  desc 'Wipe data for the e2e users (demo, lite, family members) without deleting the users themselves'
+  desc 'Wipe data for the e2e users (demo, lite) without deleting the users themselves'
   task reset: :environment do
     assert_safe_environment!
 

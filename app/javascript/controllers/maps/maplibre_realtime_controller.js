@@ -50,7 +50,6 @@ export default class extends Controller {
 
   /**
    * Setup ActionCable channels
-   * Family channel is always enabled when family feature is on
    * Points channel (live mode) is controlled by user toggle
    */
   setupChannels() {
@@ -145,10 +144,6 @@ export default class extends Controller {
         this.handleNewPoint(data.point)
         break
 
-      case "family_location":
-        this.handleFamilyLocation(data.member)
-        break
-
       // Note: notifications are handled by notifications_controller.js in the navbar
     }
   }
@@ -239,19 +234,6 @@ export default class extends Controller {
     this.zoomToPoint(parseFloat(lon), parseFloat(lat))
 
     Toast.info("New location recorded")
-  }
-
-  /**
-   * Handle family member location update
-   */
-  handleFamilyLocation(member) {
-    const mapsController = this.mapsV2Controller
-    if (!mapsController) return
-
-    const familyLayer = mapsController.layerManager?.getLayer("family")
-    if (familyLayer) {
-      familyLayer.updateMember(member)
-    }
   }
 
   // Note: Notifications are handled by notifications_controller.js in the navbar

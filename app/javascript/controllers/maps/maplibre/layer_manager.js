@@ -1,6 +1,5 @@
 import { AnomaliesLayer } from "maps_maplibre/layers/anomalies_layer"
 import { AreasLayer } from "maps_maplibre/layers/areas_layer"
-import { FamilyLayer } from "maps_maplibre/layers/family_layer"
 import { FlightsLayer } from "maps_maplibre/layers/flights_layer"
 import { HeatmapLayer } from "maps_maplibre/layers/heatmap_layer"
 import { HexagonLayer } from "maps_maplibre/layers/hexagon_layer"
@@ -46,7 +45,7 @@ export class LayerManager {
     performanceMonitor.mark("add-layers")
 
     // Layer order matters - layers added first render below layers added later
-    // Order: scratch (bottom) -> heatmap -> areas -> tracks -> routes (visual) -> visits -> places -> photos -> family -> points -> routes-hit (interaction) -> recent-point (top)
+    // Order: scratch (bottom) -> heatmap -> areas -> tracks -> routes (visual) -> visits -> places -> photos -> points -> routes-hit (interaction) -> recent-point (top)
     // Note: routes-hit is above points visually but points dragging takes precedence via event ordering
 
     await this._addScratchLayer(pointsGeoJSON)
@@ -66,7 +65,6 @@ export class LayerManager {
       console.warn("Failed to add photos layer:", error)
     }
 
-    this._addFamilyLayer()
     this._addAnomaliesLayer()
     this._addPointsLayer(pointsGeoJSON)
     this._addRoutesHitLayer() // Add hit target layer after points, will be on top visually
@@ -382,15 +380,6 @@ export class LayerManager {
       await this.layers.photosLayer.add(photosGeoJSON)
     } else {
       await this.layers.photosLayer.update(photosGeoJSON)
-    }
-  }
-
-  _addFamilyLayer() {
-    if (!this.layers.familyLayer) {
-      this.layers.familyLayer = new FamilyLayer(this.map, {
-        visible: this.settings.familyEnabled || false,
-      })
-      this.layers.familyLayer.add({ type: "FeatureCollection", features: [] })
     }
   }
 

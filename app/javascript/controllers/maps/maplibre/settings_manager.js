@@ -69,7 +69,6 @@ export class SettingsController {
       areasToggle: "areasEnabled",
       placesToggle: "placesEnabled",
       scratchToggle: "scratchEnabled",
-      familyToggle: "familyEnabled",
       speedColoredToggle: "speedColoredRoutes",
       tracksToggle: "tracksEnabled",
       flightsToggle: "flightsEnabled",
@@ -112,18 +111,6 @@ export class SettingsController {
     if (controller.hasPlacesToggleTarget && controller.hasPlacesFiltersTarget) {
       controller.placesFiltersTarget.style.display = controller
         .placesToggleTarget.checked
-        ? "block"
-        : "none"
-    }
-
-    // Show/hide family members list based on initial toggle state
-    if (
-      controller.hasFamilyToggleTarget &&
-      controller.hasFamilyMembersListTarget &&
-      controller.familyToggleTarget
-    ) {
-      controller.familyMembersListTarget.style.display = controller
-        .familyToggleTarget.checked
         ? "block"
         : "none"
     }

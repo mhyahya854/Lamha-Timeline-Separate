@@ -15,14 +15,6 @@ class Users::DestroyConfirmationsController < ApplicationController
 
     user = result.user
 
-    unless user.can_delete_account?
-      return redirect_to(
-        new_user_session_path,
-        alert: 'Cannot delete account while you own a family with other members. ' \
-               'Transfer ownership or remove members first.'
-      )
-    end
-
     unless Users::VerifyDestroyToken.consume!(result.jti)
       return redirect_to(new_user_session_path, alert: 'This deletion link has already been used.')
     end

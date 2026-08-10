@@ -92,46 +92,6 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
   end
 
-  describe '#family_upgrade_url' do
-    let(:secret) { ENV.fetch('JWT_SECRET_KEY', 'test_secret') }
-
-    def token_from(url)
-      url[/token=([^&]+)/, 1]
-    end
-
-    def decode(token)
-      JWT.decode(token, secret, true, { algorithm: 'HS256' }).first
-    end
-
-    context 'on cloud instances' do
-      let(:user) { create(:user) }
-
-      before do
-        allow(DawarichSettings).to receive(:self_hosted?).and_return(false)
-        allow(helper).to receive(:current_user).and_return(user)
-        stub_const('MANAGER_URL', 'https://manager.example.com')
-      end
-
-      it 'embeds a token whose payload carries the family plan and annual interval' do
-        url = helper.family_upgrade_url
-
-        expect(url).to start_with('https://manager.example.com/auth/dawarich?token=')
-        payload = decode(token_from(url))
-        expect(payload['plan']).to eq('family')
-        expect(payload['interval']).to eq('annual')
-        expect(payload['user_id']).to eq(user.id)
-      end
-    end
-
-    context 'on self-hosted instances' do
-      before { allow(DawarichSettings).to receive(:self_hosted?).and_return(true) }
-
-      it 'returns an empty string' do
-        expect(helper.family_upgrade_url).to eq('')
-      end
-    end
-  end
-
   describe '#subscription_button_label' do
     let(:user) { build_stubbed(:user, active_until: 3.days.from_now) }
 

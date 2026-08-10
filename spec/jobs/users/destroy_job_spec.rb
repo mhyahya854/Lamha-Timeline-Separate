@@ -140,53 +140,5 @@ RSpec.describe Users::DestroyJob, type: :job do
       end
     end
 
-    context 'when user owns a family with members' do
-      let(:family) { create(:family, creator: user) }
-      let(:other_member) { create(:user) }
-
-      before do
-        user.mark_as_deleted!
-        create(:family_membership, user: user, family: family, role: :owner)
-        create(:family_membership, user: other_member, family: family, role: :member)
-
-        allow(Users::Destroy).to receive(:new).and_call_original
-      end
-
-      it 'handles validation error gracefully' do
-        allow(Rails.logger).to receive(:info)
-        allow(Rails.logger).to receive(:error)
-        allow(ExceptionReporter).to receive(:call)
-
-        described_class.perform_now(user.id)
-
-        expect(Rails.logger).to have_received(:error).with(
-          /User deletion blocked for user_id #{user.id}/
-        )
-        expect(ExceptionReporter).to have_received(:call).with(
-          instance_of(ActiveRecord::RecordInvalid),
-          "User deletion blocked for user_id #{user.id}"
-        )
-      end
-
-      it 'does not delete the user' do
-        allow(Rails.logger).to receive(:info)
-        allow(Rails.logger).to receive(:error)
-        allow(ExceptionReporter).to receive(:call)
-
-        described_class.perform_now(user.id)
-
-        expect(User.deleted.find_by(id: user.id)).to be_present
-      end
-
-      it 'does not log success message' do
-        allow(Rails.logger).to receive(:info)
-        allow(Rails.logger).to receive(:error)
-        allow(ExceptionReporter).to receive(:call)
-
-        described_class.perform_now(user.id)
-
-        expect(Rails.logger).not_to have_received(:info).with("Successfully deleted user #{user.id}")
-      end
-    end
   end
 end

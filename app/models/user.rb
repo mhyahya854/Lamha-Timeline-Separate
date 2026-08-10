@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
-  include UserFamily
   include Omniauthable
   include PlanScopable
   include SoftDeletable # introduces default_scope and soft-delete methods

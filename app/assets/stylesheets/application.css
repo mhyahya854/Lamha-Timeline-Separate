@@ -129,24 +129,6 @@
   }
 }
 
-/* Family feature specific styles */
-.family-member-card {
-  transition: all 0.2s ease-in-out;
-}
-
-.family-member-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.invitation-card {
-  border-left: 4px solid #f59e0b;
-}
-
-.family-invitation-form {
-  max-width: 500px;
-}
-
 /* Loading states */
 .btn:disabled {
   opacity: 0.7;

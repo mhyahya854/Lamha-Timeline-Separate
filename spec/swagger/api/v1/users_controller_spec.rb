@@ -88,19 +88,6 @@ describe 'Users API', type: :request do
         run_test!
       end
 
-      response '422', 'cannot delete account (family owner with members)' do
-        schema type: :object,
-               properties: { error: { type: :string }, message: { type: :string } }
-
-        let(:payload) { {} }
-
-        before do
-          allow_any_instance_of(User).to receive(:can_delete_account?).and_return(false)
-        end
-
-        run_test!
-      end
-
       response '401', 'unauthorized' do
         let(:Authorization) { 'Bearer invalid-token' }
         let(:payload) { {} }
